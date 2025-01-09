@@ -49,3 +49,5 @@ supabase/.temp/
 supabase/.branches/
 
 server*
+bin/*
+bin
