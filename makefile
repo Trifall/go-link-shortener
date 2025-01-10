@@ -53,9 +53,10 @@ test: ## Run tests
 
 coverage: ## Run tests with coverage
 	@printf "$(BLUE)Running tests with coverage...$(NC)\n"
-	@go test -v -coverprofile=coverage.out ./...
-	@go tool cover -html=coverage.out -o coverage.html
-	@printf "$(GREEN)Coverage analysis complete. See coverage.html for detailed report$(NC)\n"
+	@mkdir -p coverage
+	@ENVIRONMENT=test go test -v -coverprofile=coverage/coverage.out ./...
+	@go tool cover -html=coverage/coverage.out -o coverage/coverage.html
+	@printf "$(GREEN)Coverage analysis complete. See coverage/coverage.html for detailed report$(NC)\n"
 
 vet: ## Run go vet
 	@printf "$(BLUE)Running go vet...$(NC)\n"
