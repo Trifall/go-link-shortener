@@ -72,6 +72,18 @@ lint: ## Run linter
 		exit 1; \
 	fi
 
+setup: ## Setup the project
+	@make deps
+	@printf "$(BLUE)Setting up project...$(NC)\n"
+	@chmod +x ./scripts/*.sh
+	@bash ./scripts/setup.sh
+	@printf "$(GREEN)=================================================$(NC)\n"
+	@printf "$(GREEN)Project setup complete! $(NC)\n"
+	@printf "$(GREEN)Check .env file for credentials.$(NC)\n"
+	@printf "$(GREEN)Use 'make run' to start the server.$(NC)\n"
+	@printf "$(GREEN)Use 'make help' for more commands.$(NC)\n"
+	@printf "$(GREEN)=================================================$(NC)\n"
+
 help: ## Display available commands
 	@echo "Available commands:"
 	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(GREEN)%-20s$(NC) %s\n", $$1, $$2}'
