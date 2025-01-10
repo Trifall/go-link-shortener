@@ -51,3 +51,5 @@ supabase/.branches/
 server*
 bin/*
 bin
+*.tmp
+.pgpass
