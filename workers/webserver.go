@@ -24,11 +24,11 @@ func InitializeWebserver() error {
 		MaxAge:           300,
 	}))
 
-	// Add some useful middleware
+	// Middleware stack
 	r.Use(middleware.Logger)    // Log API requests
 	r.Use(middleware.Recoverer) // Recover from panics without crashing server
 
-	// Mount our handlers
+	// Mount handlers
 	r.Get("/", handlers.HomeHandler)
 	r.Get("/health", handlers.HealthCheckHandler)
 	r.Post("/shorten", handlers.ShortenHandler)

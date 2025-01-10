@@ -39,7 +39,7 @@ func main() {
 
 	log.Println("✔️  Background workers set up successfully.")
 
-	// spin up the webserver
+	// Spin up the webserver
 	err := workers.InitializeWebserver()
 	if err != nil {
 		log.Fatal(err)

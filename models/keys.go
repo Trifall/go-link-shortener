@@ -75,8 +75,6 @@ func CheckKeyByName(db *gorm.DB, name string) *string {
 		// No record found, return nil without logging the error
 		return nil
 	} else if result.Error != nil {
-		// Handle other potential errors (optional)
-		// You can log the error here if needed
 		log.Printf("Error querying database: %v", result.Error)
 		return nil
 	}

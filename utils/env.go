@@ -7,7 +7,6 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// create env struct
 type Env struct {
 	DBHost        string
 	DBUser        string
