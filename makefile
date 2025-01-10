@@ -48,7 +48,7 @@ deps: ## Download and verify dependencies
 
 test: ## Run tests
 	@printf "$(BLUE)Running tests...$(NC)\n"
-	@go test -v ./...
+	@ENVIRONMENT=test go test -v ./...
 	@printf "$(GREEN)Tests complete$(NC)\n"
 
 coverage: ## Run tests with coverage

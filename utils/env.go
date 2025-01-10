@@ -18,18 +18,34 @@ type Env struct {
 	LOG_LEVEL     string
 }
 
+func CheckTestEnvironment() bool {
+	_, ok := os.LookupEnv("ENVIRONMENT")
+	return ok
+}
+
 func LoadEnv() *Env {
 	log.Println("⏳ Loading environment variables...")
 
-	// Load environment variables from .env file
-	if err := godotenv.Load(); err != nil {
-		log.Fatal("Error loading .env file")
+	ok := CheckTestEnvironment()
+
+	var err error
+	if ok {
+		err = godotenv.Load("../.env.example")
+	} else {
+		err = godotenv.Load()
+	}
+
+	if err != nil {
+		log.Fatalf("Error loading .env file: %v", err)
 	}
 
 	// verify that all required environment variables are set
 	requiredEnvVars := []string{"DB_HOST", "DB_USER", "DB_PASSWORD", "DB_NAME", "DB_PORT", "DB_SSLMODE"}
 	for _, envVar := range requiredEnvVars {
 		if os.Getenv(envVar) == "" {
+			if ok {
+				panic("Missing required environment variables")
+			}
 			log.Fatalf("Error: %s environment variable is not set", envVar)
 		}
 	}
