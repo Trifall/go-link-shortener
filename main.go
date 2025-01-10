@@ -1,40 +1,47 @@
 package main
 
 import (
+	"context"
 	"log"
-	"net/http"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/cors"
-
-	"go-link-shortener/handlers"
+	"go-link-shortener/models"
+	"go-link-shortener/utils"
+	"go-link-shortener/workers"
 )
 
 func main() {
-	// Create a new chi router
-	r := chi.NewRouter()
 
-	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"*"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
-		ExposedHeaders:   []string{"Link"},
-		AllowCredentials: false,
-		MaxAge:           300,
-	}))
+	log.Println("Starting Link Shortener")
 
-	// Add some useful middleware
-	r.Use(middleware.Logger)    // Log API requests
-	r.Use(middleware.Recoverer) // Recover from panics without crashing server
+	env := utils.LoadEnv()
 
-	// Mount our handlers
-	r.Get("/", handlers.HomeHandler)
-	r.Get("/health", handlers.HealthCheckHandler)
+	db := utils.ConnectToDatabase(env)
 
-	// Start the server
-	log.Println("Starting server on :8080")
-	if err := http.ListenAndServe(":8080", r); err != nil {
+	// Setup database
+	if err := models.SetupDatabase(db); err != nil {
+		log.Fatal(err)
+	}
+
+	utils.InitializeRootUser(db, env.ROOT_USER_KEY)
+
+	log.Println("⏳ Setting up background workers...")
+
+	// Initialize the link expiration worker
+	worker := workers.NewLinkExpirationWorker(db)
+
+	// Start the worker in a goroutine
+	ctx := context.Background()
+	go func() {
+		if err := worker.Start(ctx); err != nil {
+			log.Printf("Link expiration worker error: %v", err)
+		}
+	}()
+
+	log.Println("✔️  Background workers set up successfully.")
+
+	// spin up the webserver
+	err := workers.InitializeWebserver()
+	if err != nil {
 		log.Fatal(err)
 	}
 }
