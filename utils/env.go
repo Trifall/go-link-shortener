@@ -16,6 +16,7 @@ type Env struct {
 	DBPort        string
 	DBSSLMode     string
 	ROOT_USER_KEY string
+	LOG_LEVEL     string
 }
 
 func LoadEnv() *Env {
@@ -35,12 +36,14 @@ func LoadEnv() *Env {
 	}
 
 	env := Env{
-		DBHost:     os.Getenv("DB_HOST"),
-		DBUser:     os.Getenv("DB_USER"),
-		DBPassword: os.Getenv("DB_PASSWORD"),
-		DBName:     os.Getenv("DB_NAME"),
-		DBPort:     os.Getenv("DB_PORT"),
-		DBSSLMode:  os.Getenv("DB_SSLMODE"),
+		DBHost:        os.Getenv("DB_HOST"),
+		DBUser:        os.Getenv("DB_USER"),
+		DBPassword:    os.Getenv("DB_PASSWORD"),
+		DBName:        os.Getenv("DB_NAME"),
+		DBPort:        os.Getenv("DB_PORT"),
+		DBSSLMode:     os.Getenv("DB_SSLMODE"),
+		LOG_LEVEL:     os.Getenv("LOG_LEVEL"),
+		ROOT_USER_KEY: os.Getenv("ROOT_USER_KEY"),
 	}
 
 	log.Println("✔️  Environment variables loaded successfully.")

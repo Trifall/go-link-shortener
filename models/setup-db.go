@@ -77,7 +77,7 @@ func SetupDatabase(db *gorm.DB) error {
 		return err
 	}
 
-	log.Println("✔️  Connected to postgres database.")
+	log.Println("✔️  Connected to Postgres database.")
 
 	return nil
 }

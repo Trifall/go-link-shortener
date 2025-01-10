@@ -3,7 +3,6 @@ package utils
 import (
 	"go-link-shortener/models"
 	"log"
-	"os"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -11,7 +10,7 @@ import (
 )
 
 func ConnectToDatabase(env *Env) *gorm.DB {
-	log.Println("⏳ Connecting to postgres database...")
+	log.Println("⏳ Connecting to Postgres database...")
 
 	dsn := "host=" + env.DBHost +
 		" user=" + env.DBUser +
@@ -21,8 +20,23 @@ func ConnectToDatabase(env *Env) *gorm.DB {
 		" sslmode=" + env.DBSSLMode +
 		" TimeZone=UTC"
 
+	loggerMode := logger.Silent
+	loggerStrVal := "Silent"
+	if env.LOG_LEVEL == "debug" || env.LOG_LEVEL == "info" {
+		loggerMode = logger.Info
+		loggerStrVal = "Info"
+	} else if env.LOG_LEVEL == "warn" {
+		loggerMode = logger.Warn
+		loggerStrVal = "Warn"
+	} else if env.LOG_LEVEL == "error" {
+		loggerMode = logger.Error
+		loggerStrVal = "Error"
+	}
+
+	log.Println("🛈  GORM Logging Mode:", loggerStrVal)
+
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent),
+		Logger: logger.Default.LogMode(loggerMode),
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -35,7 +49,6 @@ func InitializeRootUser(db *gorm.DB, rootUserKey string) {
 	if models.CheckKeyByName(db, "Root User") == nil {
 		log.Println("⏳ No Root User detected, loading from .env...")
 		// Load root user key from environment variable
-		rootUserKey := os.Getenv("ROOT_USER_KEY")
 		if rootUserKey == "" {
 			log.Fatal("Error: ROOT_USER_KEY environment variable is not set")
 		}
