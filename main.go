@@ -15,19 +15,19 @@ func main() {
 
 	env := utils.LoadEnv()
 
-	db := utils.ConnectToDatabase(env)
+	utils.SetDB(utils.ConnectToDatabase(env))
 
 	// Setup database
-	if err := models.SetupDatabase(db); err != nil {
+	if err := models.SetupDatabase(utils.GetDB()); err != nil {
 		log.Fatal(err)
 	}
 
-	utils.InitializeRootUser(db, env.ROOT_USER_KEY)
+	utils.InitializeRootUser(utils.GetDB(), env.ROOT_USER_KEY)
 
 	log.Println("⏳ Setting up background workers...")
 
 	// Initialize the link expiration worker
-	worker := workers.NewLinkExpirationWorker(db)
+	worker := workers.NewLinkExpirationWorker(utils.GetDB())
 
 	// Start the worker in a goroutine
 	ctx := context.Background()

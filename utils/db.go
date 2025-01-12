@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"go-link-shortener/lib"
 	"go-link-shortener/models"
 	"log"
 
@@ -8,6 +9,16 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
+
+var db *gorm.DB
+
+func SetDB(database *gorm.DB) {
+	db = database
+}
+
+func GetDB() *gorm.DB {
+	return db
+}
 
 func ConnectToDatabase(env *Env) *gorm.DB {
 	log.Println("⏳ Connecting to Postgres database...")
@@ -46,7 +57,7 @@ func ConnectToDatabase(env *Env) *gorm.DB {
 }
 
 func InitializeRootUser(db *gorm.DB, rootUserKey string) {
-	if models.CheckKeyByName(db, "Root User") == nil {
+	if models.SearchKeyByName(db, lib.ROOT_USER_NAME) == nil {
 		log.Println("⏳ No Root User detected, loading from .env...")
 		// Load root user key from environment variable
 		if rootUserKey == "" {

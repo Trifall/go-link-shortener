@@ -1,7 +1,7 @@
 package workers
 
 import (
-	"go-link-shortener/handlers"
+	"go-link-shortener/api"
 	"log"
 	"net/http"
 
@@ -11,10 +11,11 @@ import (
 )
 
 func InitializeWebserver() error {
-	log.Println("⏳ Initializing routes and handlers...")
+	log.Println("⏳ Initializing API...")
 	// Create a new chi router
 	r := chi.NewRouter()
 
+	// TODO: might need to update this to allow for the frontend to connect
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -28,12 +29,9 @@ func InitializeWebserver() error {
 	r.Use(middleware.Logger)    // Log API requests
 	r.Use(middleware.Recoverer) // Recover from panics without crashing server
 
-	// Mount handlers
-	r.Get("/", handlers.HomeHandler)
-	r.Get("/health", handlers.HealthCheckHandler)
-	r.Post("/shorten", handlers.ShortenHandler)
+	r.Mount("/api", api.InitializeAPIRouter())
 
-	log.Println("✔️  Routes and handlers initialized successfully.")
+	log.Println("✔️  API initialized successfully.")
 	log.Println("✔️  Starting server on :8080")
 
 	// Start the server

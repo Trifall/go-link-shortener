@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
+	"go-link-shortener/lib"
 	"log"
 	"time"
 
@@ -27,13 +28,12 @@ func CreateSecretKey(db *gorm.DB, name string) *string {
 	key = base64.URLEncoding.EncodeToString(make([]byte, 32))
 
 	secretKey := &SecretKey{
-		Key:        key,
-		Name:       name,
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
-		LastUsedAt: nil,
-		Active:     true,
-		IsAdmin:    false,
+		Key:       key,
+		Name:      name,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Active:    true,
+		IsAdmin:   false,
 	}
 
 	result := db.Create(secretKey)
@@ -49,13 +49,12 @@ func CreateRootUserKey(db *gorm.DB, key string) *string {
 	log.Println("⏳ Creating Root User key...")
 
 	secretKey := &SecretKey{
-		Key:        key,
-		Name:       "Root User",
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
-		LastUsedAt: nil,
-		Active:     true,
-		IsAdmin:    true,
+		Key:       key,
+		Name:      lib.ROOT_USER_NAME,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Active:    true,
+		IsAdmin:   true,
 	}
 
 	result := db.Create(secretKey)
@@ -67,7 +66,7 @@ func CreateRootUserKey(db *gorm.DB, key string) *string {
 	return &key
 }
 
-func CheckKeyByName(db *gorm.DB, name string) *string {
+func SearchKeyByName(db *gorm.DB, name string) *SecretKey {
 	var secretKey SecretKey
 	result := db.Where("name = ?", name).First(&secretKey)
 
@@ -79,5 +78,22 @@ func CheckKeyByName(db *gorm.DB, name string) *string {
 		return nil
 	}
 
-	return &secretKey.Key
+	return &secretKey
+}
+
+func SearchKeyByKey(db *gorm.DB, key string) *SecretKey {
+	var secretKey SecretKey
+	result := db.Where("key = ?", key).First(&secretKey)
+
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		// No record found, return nil without logging the error
+		return nil
+	}
+
+	if result.Error != nil {
+		log.Printf("Error querying database: %v", result.Error)
+		return nil
+	}
+
+	return &secretKey
 }

@@ -10,14 +10,13 @@ import (
 
 // SecretKey represents the secret_keys table
 type SecretKey struct {
-	ID         uuid.UUID `gorm:"type:uuid;primary_key;default:uuid_generate_v4()"`
-	Key        string    `gorm:"type:varchar(64);unique;not null"`
-	Name       string    `gorm:"type:varchar(100);not null"`
-	CreatedAt  time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
-	UpdatedAt  time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
-	LastUsedAt *time.Time
-	Active     bool `gorm:"not null;default:true"`
-	IsAdmin    bool `gorm:"not null;default:false"`
+	ID        uuid.UUID `gorm:"type:uuid;primary_key;default:uuid_generate_v4()"` // Primary key
+	Key       string    `gorm:"type:varchar(64);unique;not null"`
+	Name      string    `gorm:"type:varchar(100);not null"`
+	CreatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
+	UpdatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP;autoUpdateTime"`
+	Active    bool      `gorm:"not null;default:true"`
+	IsAdmin   bool      `gorm:"not null;default:false"`
 }
 
 // Link represents the links table
@@ -27,7 +26,7 @@ type Link struct {
 	Shortened     string    `gorm:"type:varchar(100);unique;not null"`
 	ExpiresAt     *time.Time
 	CreatedAt     time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
-	UpdatedAt     time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
+	UpdatedAt     time.Time `gorm:"not null;default:CURRENT_TIMESTAMP;autoUpdateTime"`
 	CreatedBy     uuid.UUID `gorm:"type:uuid;not null"`                 // Reference the SecretKey's ID
 	SecretKey     SecretKey `gorm:"foreignKey:CreatedBy;references:ID"` // Foreign key references SecretKey's ID
 	Visits        int       `gorm:"not null;default:0"`
