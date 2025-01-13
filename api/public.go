@@ -10,7 +10,6 @@ type ErrorResponse struct {
 }
 
 // HomeHandler responds to the root endpoint
-// HomeHandler responds to the root endpoint
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	response := map[string]string{
 		"message": "Jerren's Link Shortener - there's nothing on this page!",
