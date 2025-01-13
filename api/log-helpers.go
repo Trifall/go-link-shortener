@@ -25,7 +25,7 @@ func writeErrorResponse(w http.ResponseWriter, config ErrorResponseConfig) {
 	// Log the error
 	logMessage := config.Message + " | IP: " + config.Request.RemoteAddr
 	if config.CtxValues != nil && config.CtxValues.SecretKey != "" {
-		logMessage += " | Requested by: " + config.CtxValues.SecretKey
+		logMessage += " | Requested by: '" + config.CtxValues.SecretKey + "'"
 	}
 	if config.Addendum != "" {
 		logMessage += " | " + config.Addendum

@@ -33,6 +33,7 @@ func V1Router() chi.Router {
 	// Use AdminOnlyMiddleware for admin only routes
 	r.With(AdminOnlyMiddleware).Post("/validate", ValidateKeyHandler)
 	r.With(AdminOnlyMiddleware).Post("/generate", GenerateKeyHandler)
+	r.With(AdminOnlyMiddleware).Post("/delete", DeleteKeyHandler)
 
 	return r
 }

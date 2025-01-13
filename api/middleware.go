@@ -23,7 +23,7 @@ func LogMiddleware(next http.Handler) http.Handler {
 
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Extract the secret key from the request
+		// extract secret key from the request
 		secretKey := r.Header.Get("Authorization")
 		if secretKey == "" {
 			config := ErrorResponseConfig{
@@ -107,7 +107,7 @@ func AdminOnlyMiddleware(next http.Handler) http.Handler {
 				LogSource: models.LogSourceAuth,
 				Request:   r,
 				CtxValues: &ctxValues,
-				Addendum:  "Requested by: " + ctxValues.SecretKey,
+				Addendum:  "Requested by: '" + ctxValues.SecretKey + "'",
 			}
 			writeErrorResponse(w, config)
 			return

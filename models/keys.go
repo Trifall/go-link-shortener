@@ -45,7 +45,7 @@ func CreateSecretKey(db *gorm.DB, name string, isAdmin bool) *SecretKey {
 		return nil
 	}
 
-	log.Println("Secret key with name:", name, "created successfully.")
+	log.Println("Secret key with name: ", name, "created successfully.")
 	return secretKey
 }
 

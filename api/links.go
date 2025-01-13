@@ -9,7 +9,7 @@ import (
 type ShortenRequest struct {
 	URL       string `json:"url"`
 	Duration  int    `json:"duration"`
-	SecretKey string `json:"secret_key"`
+	SecretKey string `json:"key"`
 }
 
 type ShortenResponse struct {

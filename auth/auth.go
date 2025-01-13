@@ -39,8 +39,7 @@ func GenerateSecretKey(newKeyName string, isAdmin bool) (*models.SecretKey, erro
 }
 
 type UpdateKeyRequest struct {
-	SecretKey         *string `json:"secret_key"`
-	SecretKeyToUpdate *string `json:"secret_key_to_update"` // key to update
+	SecretKeyToUpdate *string `json:"key_to_update"` // key to update
 	Name              *string `json:"name"`
 	Active            *bool   `json:"active"`
 	IsAdmin           *bool   `json:"is_admin"`
@@ -50,10 +49,6 @@ func UpdateKey(request UpdateKeyRequest) (string, error) {
 	db := database.GetDB()
 	if db == nil {
 		return "", errors.New(lib.ERRORS.Database)
-	}
-
-	if request.SecretKey == nil {
-		return "", errors.New(lib.ERRORS.NoSecretKey)
 	}
 
 	if request.Name != nil {
