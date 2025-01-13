@@ -8,6 +8,7 @@ func InitializeAPIRouter() chi.Router {
 	r := chi.NewRouter()
 
 	// !Public Routes Below!
+	r.Use(LogMiddleware)
 
 	// Mount handlers
 	r.Get("/", HomeHandler)
@@ -31,6 +32,7 @@ func V1Router() chi.Router {
 	// !Admin Routes Below!
 	// Use AdminOnlyMiddleware for admin only routes
 	r.With(AdminOnlyMiddleware).Post("/validate", ValidateKeyHandler)
+	r.With(AdminOnlyMiddleware).Post("/generate", GenerateKeyHandler)
 
 	return r
 }

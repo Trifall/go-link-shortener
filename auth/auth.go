@@ -2,9 +2,9 @@ package auth
 
 import (
 	"errors"
+	"go-link-shortener/database"
 	"go-link-shortener/lib"
 	"go-link-shortener/models"
-	"go-link-shortener/utils"
 )
 
 /*
@@ -12,30 +12,30 @@ import (
 */
 
 // pass in the creators secret key and the new key name (for the new key)
-func GenerateSecretKey(newKeyName string) (string, error) {
-	db := utils.GetDB()
+func GenerateSecretKey(newKeyName string, isAdmin bool) (*models.SecretKey, error) {
+	db := database.GetDB()
 	if db == nil {
-		return "", errors.New(lib.ERRORS.Database)
+		return nil, errors.New(lib.ERRORS.Database)
 	}
 
 	if len(newKeyName) > 100 {
-		return "", errors.New("new key name is too long")
+		return nil, errors.New("new key name is too long")
 	}
 
 	nameAlreadyExists := models.SearchKeyByName(db, newKeyName)
 
 	if newKeyName == lib.ROOT_USER_NAME || nameAlreadyExists != nil {
-		return "", errors.New("key name already exists")
+		return nil, errors.New("key name already exists")
 	}
 
 	// create new key
-	key := models.CreateSecretKey(db, newKeyName)
+	key := models.CreateSecretKey(db, newKeyName, isAdmin)
 
 	if key == nil {
-		return "", errors.New("failed to create new key")
+		return nil, errors.New("failed to create new key")
 	}
 
-	return *key, nil
+	return key, nil
 }
 
 type UpdateKeyRequest struct {
@@ -47,7 +47,7 @@ type UpdateKeyRequest struct {
 }
 
 func UpdateKey(request UpdateKeyRequest) (string, error) {
-	db := utils.GetDB()
+	db := database.GetDB()
 	if db == nil {
 		return "", errors.New(lib.ERRORS.Database)
 	}
@@ -87,7 +87,7 @@ func UpdateKey(request UpdateKeyRequest) (string, error) {
 }
 
 func DeleteKeyByKey(keyToDelete string) (string, error) {
-	db := utils.GetDB()
+	db := database.GetDB()
 	if db == nil {
 		return "", errors.New(lib.ERRORS.Database)
 	}
@@ -112,7 +112,7 @@ func DeleteKeyByKey(keyToDelete string) (string, error) {
 }
 
 func DeleteKeyByName(keyName string) (string, error) {
-	db := utils.GetDB()
+	db := database.GetDB()
 	if db == nil {
 		return "", errors.New(lib.ERRORS.Database)
 	}
@@ -137,7 +137,7 @@ func DeleteKeyByName(keyName string) (string, error) {
 }
 
 func GetKeys(secretKey string) ([]models.SecretKey, error) {
-	db := utils.GetDB()
+	db := database.GetDB()
 	if db == nil {
 		return nil, errors.New(lib.ERRORS.Database)
 	}
@@ -149,7 +149,7 @@ func GetKeys(secretKey string) ([]models.SecretKey, error) {
 }
 
 func ValidateKey(secretKey string) (*models.SecretKey, error) {
-	db := utils.GetDB()
+	db := database.GetDB()
 	if db == nil {
 		return nil, errors.New(lib.ERRORS.Database)
 	}

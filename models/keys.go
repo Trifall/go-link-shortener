@@ -11,7 +11,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func CreateSecretKey(db *gorm.DB, name string) *string {
+func CreateSecretKey(db *gorm.DB, name string, isAdmin bool) *SecretKey {
 	log.Println("Creating secret key with name:", name, "...")
 	var key string
 
@@ -24,8 +24,12 @@ func CreateSecretKey(db *gorm.DB, name string) *string {
 		name = "User " + randomPrefix
 	}
 
-	// Generate a random 32 character key
-	key = base64.URLEncoding.EncodeToString(make([]byte, 32))
+	// Generate random bytes for the key
+	keyBytes := make([]byte, 32)
+	if _, err := rand.Read(keyBytes); err != nil {
+		return nil
+	}
+	key = base64.URLEncoding.EncodeToString(keyBytes)
 
 	secretKey := &SecretKey{
 		Key:       key,
@@ -33,7 +37,7 @@ func CreateSecretKey(db *gorm.DB, name string) *string {
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 		Active:    true,
-		IsAdmin:   false,
+		IsAdmin:   isAdmin,
 	}
 
 	result := db.Create(secretKey)
@@ -42,7 +46,7 @@ func CreateSecretKey(db *gorm.DB, name string) *string {
 	}
 
 	log.Println("Secret key with name:", name, "created successfully.")
-	return &key
+	return secretKey
 }
 
 func CreateRootUserKey(db *gorm.DB, key string) *string {

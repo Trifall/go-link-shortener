@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"go-link-shortener/auth"
+	"go-link-shortener/models"
 	"go-link-shortener/utils"
 	"log"
 	"net/http"
@@ -22,31 +23,52 @@ type ContextValues struct {
 	IsAdmin   bool
 }
 
+type GenerateKeyRequest struct {
+	Name    string `json:"name"`
+	IsAdmin bool   `json:"is_admin"`
+}
+
+type GenerateKeyResponse struct {
+	Key       string `json:"key"`
+	Name      string `json:"name"`
+	CreatedAt string `json:"created_at"`
+	IsAdmin   bool   `json:"is_admin"`
+}
+
 func ValidateKeyHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		config := ErrorResponseConfig{
+			Status:    http.StatusMethodNotAllowed,
+			Message:   "Method not allowed",
+			LogType:   models.LogTypeError,
+			LogSource: models.LogSourceAuth,
+			Request:   r,
+			CtxValues: nil,
+			Addendum:  "",
+		}
+		writeErrorResponse(w, config)
 		return
 	}
 
-	// Use the helper function to check if the request is unauthorized
 	if CheckUnauthorized(w, r) {
-		return
+		return // CheckUnauthorized handles its own error response
 	}
 
-	// Retrieve the context values from the context
 	ctxValues, _ := GetContextValues(r)
-
 	log.Println("Validating - Key:", ctxValues.SecretKey, ", IsAdmin:", ctxValues.IsAdmin)
 
 	keyObj, err := auth.ValidateKey(ctxValues.SecretKey)
-
 	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		errorResponse := ErrorResponse{Message: err.Error()}
-		if err := json.NewEncoder(w).Encode(errorResponse); err != nil {
-			http.Error(w, "Server Error", http.StatusInternalServerError)
-			return
+		config := ErrorResponseConfig{
+			Status:    http.StatusUnauthorized,
+			Message:   err.Error(),
+			LogType:   models.LogTypeError,
+			LogSource: models.LogSourceAuth,
+			Request:   r,
+			CtxValues: &ctxValues,
+			Addendum:  "Requested by: " + ctxValues.SecretKey,
 		}
+		writeErrorResponse(w, config)
 		return
 	}
 
@@ -61,7 +83,101 @@ func ValidateKeyHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		http.Error(w, "Server Error", http.StatusInternalServerError)
+		config := ErrorResponseConfig{
+			Status:    http.StatusInternalServerError,
+			Message:   "Server Error",
+			LogType:   models.LogTypeError,
+			LogSource: models.LogSourceAuth,
+			Request:   r,
+			CtxValues: &ctxValues,
+			Addendum:  "Requested by: " + ctxValues.SecretKey,
+		}
+		writeErrorResponse(w, config)
 		return
 	}
+
+	models.CreateLog(models.LogTypeInfo, models.LogSourceAuth,
+		"Validated key from IP Address: "+r.RemoteAddr+" with name: "+keyObj.Name+". Requested by: "+ctxValues.SecretKey)
+}
+
+func GenerateKeyHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		config := ErrorResponseConfig{
+			Status:    http.StatusMethodNotAllowed,
+			Message:   "Method not allowed",
+			LogType:   models.LogTypeError,
+			LogSource: models.LogSourceAuth,
+			Request:   r,
+			CtxValues: nil,
+			Addendum:  "",
+		}
+		writeErrorResponse(w, config)
+		return
+	}
+
+	if CheckUnauthorized(w, r) {
+		return // CheckUnauthorized handles its own error response
+	}
+
+	var request GenerateKeyRequest
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		config := ErrorResponseConfig{
+			Status:    http.StatusBadRequest,
+			Message:   "Invalid request body",
+			LogType:   models.LogTypeError,
+			LogSource: models.LogSourceAuth,
+			Request:   r,
+			CtxValues: nil,
+			Addendum:  "",
+		}
+		writeErrorResponse(w, config)
+		return
+	}
+
+	ctxValues, _ := GetContextValues(r)
+	log.Println("Generating key with name:", request.Name, ", IsAdmin:", request.IsAdmin, ". Requested by:", ctxValues.SecretKey)
+
+	newKeyObj, err := auth.GenerateSecretKey(request.Name, request.IsAdmin)
+	if err != nil {
+		config := ErrorResponseConfig{
+			Status:    http.StatusInternalServerError,
+			Message:   err.Error(),
+			LogType:   models.LogTypeError,
+			LogSource: models.LogSourceAuth,
+			Request:   r,
+			CtxValues: &ctxValues,
+			Addendum:  "Requested by: " + ctxValues.SecretKey,
+		}
+		writeErrorResponse(w, config)
+		return
+	}
+
+	response := GenerateKeyResponse{
+		Key:       newKeyObj.Key,
+		Name:      newKeyObj.Name,
+		CreatedAt: utils.SafeString(&newKeyObj.CreatedAt),
+		IsAdmin:   newKeyObj.IsAdmin,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		config := ErrorResponseConfig{
+			Status:    http.StatusInternalServerError,
+			Message:   "Server Error",
+			LogType:   models.LogTypeError,
+			LogSource: models.LogSourceAuth,
+			Request:   r,
+			CtxValues: &ctxValues,
+			Addendum:  "Requested by: " + ctxValues.SecretKey,
+		}
+		writeErrorResponse(w, config)
+		return
+	}
+
+	if request.Name == "" {
+		request.Name = newKeyObj.Name
+	}
+
+	models.CreateLog(models.LogTypeInfo, models.LogSourceAuth,
+		"Generated a new key from IP Address: "+r.RemoteAddr+" with name: "+request.Name+". Requested by: "+ctxValues.SecretKey)
 }

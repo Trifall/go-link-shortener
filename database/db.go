@@ -1,8 +1,7 @@
-package utils
+package database
 
 import (
-	"go-link-shortener/lib"
-	"go-link-shortener/models"
+	"go-link-shortener/utils"
 	"log"
 
 	"gorm.io/driver/postgres"
@@ -20,7 +19,17 @@ func GetDB() *gorm.DB {
 	return db
 }
 
-func ConnectToDatabase(env *Env) *gorm.DB {
+type Env struct {
+	DBHost     string
+	DBUser     string
+	DBPassword string
+	DBName     string
+	DBPort     string
+	DBSSLMode  string
+	LOG_LEVEL  string
+}
+
+func ConnectToDatabase(env *utils.Env) *gorm.DB {
 	log.Println("⏳ Connecting to Postgres database...")
 
 	dsn := "host=" + env.DBHost +
@@ -54,20 +63,4 @@ func ConnectToDatabase(env *Env) *gorm.DB {
 	}
 
 	return db
-}
-
-func InitializeRootUser(db *gorm.DB, rootUserKey string) {
-	if models.SearchKeyByName(db, lib.ROOT_USER_NAME) == nil {
-		log.Println("⏳ No Root User detected, loading from .env...")
-		// Load root user key from environment variable
-		if rootUserKey == "" {
-			log.Fatal("Error: ROOT_USER_KEY environment variable is not set")
-		}
-
-		// create secret key for Root User
-		rootUserKey = *models.CreateRootUserKey(db, rootUserKey)
-		if rootUserKey == "" {
-			log.Fatal("Error creating Root User key")
-		}
-	}
 }

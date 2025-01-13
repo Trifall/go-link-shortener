@@ -3,42 +3,76 @@ package api
 import (
 	"context"
 	"go-link-shortener/auth"
+	"go-link-shortener/database"
 	"go-link-shortener/lib"
-	"go-link-shortener/utils"
+	"go-link-shortener/models"
 	"net/http"
 )
 
 type ContextKey string
 
-// Define a constant for the key
 const secretKeyContextKey ContextKey = "secret_key"
+
+func LogMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		models.CreateLog(models.LogTypeInfo, models.LogSourceRequest,
+			"Request from IP Address: "+r.RemoteAddr+" for "+r.URL.Path)
+		next.ServeHTTP(w, r)
+	})
+}
 
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Extract the secret key from the request (assuming it's in the header)
+		// Extract the secret key from the request
 		secretKey := r.Header.Get("Authorization")
 		if secretKey == "" {
-			http.Error(w, "Authorization header required", http.StatusUnauthorized)
+			config := ErrorResponseConfig{
+				Status:    http.StatusUnauthorized,
+				Message:   "Authorization header required",
+				LogType:   models.LogTypeError,
+				LogSource: models.LogSourceAuth,
+				Request:   r,
+				CtxValues: nil,
+				Addendum:  "Requested by: " + secretKey,
+			}
+			writeErrorResponse(w, config)
 			return
 		}
 
 		// Validate the key and get the key object
 		keyObj, err := auth.ValidateKey(secretKey)
 		if err != nil {
-			http.Error(w, "Error: "+err.Error(), http.StatusUnauthorized)
+			config := ErrorResponseConfig{
+				Status:    http.StatusUnauthorized,
+				Message:   "Error: " + err.Error(),
+				LogType:   models.LogTypeError,
+				LogSource: models.LogSourceAuth,
+				Request:   r,
+				CtxValues: nil,
+				Addendum:  "Requested by: " + secretKey,
+			}
+			writeErrorResponse(w, config)
 			return
 		}
 
 		// Save the updated key object back to the database
-		db := utils.GetDB()
+		db := database.GetDB()
 		if db == nil {
-			http.Error(w, lib.ERRORS.Database, http.StatusInternalServerError)
+			config := ErrorResponseConfig{
+				Status:    http.StatusInternalServerError,
+				Message:   lib.ERRORS.Database,
+				LogType:   models.LogTypeError,
+				LogSource: models.LogSourceAuth,
+				Request:   r,
+				CtxValues: nil,
+				Addendum:  "Requested by: " + secretKey,
+			}
+			writeErrorResponse(w, config)
 			return
 		}
-
 		db.Save(&keyObj)
 
-		// Attach the key object to the request context as a ContextValues struct
+		// Attach the key object to the request context
 		ctxValues := ContextValues{
 			SecretKey: keyObj.Key,
 			IsAdmin:   keyObj.IsAdmin,
@@ -50,20 +84,35 @@ func AuthMiddleware(next http.Handler) http.Handler {
 
 func AdminOnlyMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Retrieve the context values from the context
 		ctxValues, ok := r.Context().Value(secretKeyContextKey).(ContextValues)
 		if !ok {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			config := ErrorResponseConfig{
+				Status:    http.StatusUnauthorized,
+				Message:   "Unauthorized",
+				LogType:   models.LogTypeError,
+				LogSource: models.LogSourceAuth,
+				Request:   r,
+				CtxValues: nil,
+				Addendum:  "Context values not found",
+			}
+			writeErrorResponse(w, config)
 			return
 		}
 
-		// Check if the key has admin privileges
 		if !ctxValues.IsAdmin {
-			http.Error(w, "Forbidden: Admin access required", http.StatusForbidden)
+			config := ErrorResponseConfig{
+				Status:    http.StatusForbidden,
+				Message:   "Forbidden: Admin access required",
+				LogType:   models.LogTypeError,
+				LogSource: models.LogSourceAuth,
+				Request:   r,
+				CtxValues: &ctxValues,
+				Addendum:  "Requested by: " + ctxValues.SecretKey,
+			}
+			writeErrorResponse(w, config)
 			return
 		}
 
-		// Call the next handler in the chain
 		next.ServeHTTP(w, r)
 	})
 }

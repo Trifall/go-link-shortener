@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 
+	"go-link-shortener/database"
 	"go-link-shortener/models"
 	"go-link-shortener/utils"
 	"go-link-shortener/workers"
@@ -15,19 +16,19 @@ func main() {
 
 	env := utils.LoadEnv()
 
-	utils.SetDB(utils.ConnectToDatabase(env))
+	database.SetDB(database.ConnectToDatabase(env))
 
 	// Setup database
-	if err := models.SetupDatabase(utils.GetDB()); err != nil {
+	if err := models.SetupDatabase(database.GetDB()); err != nil {
 		log.Fatal(err)
 	}
 
-	utils.InitializeRootUser(utils.GetDB(), env.ROOT_USER_KEY)
+	models.InitializeRootUser(database.GetDB(), env.ROOT_USER_KEY)
 
 	log.Println("⏳ Setting up background workers...")
 
 	// Initialize the link expiration worker
-	worker := workers.NewLinkExpirationWorker(utils.GetDB())
+	worker := workers.NewLinkExpirationWorker(database.GetDB())
 
 	// Start the worker in a goroutine
 	ctx := context.Background()
