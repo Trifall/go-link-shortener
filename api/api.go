@@ -15,6 +15,7 @@ func InitializeAPIRouter() chi.Router {
 
 	return r
 }
+
 func V1Router() chi.Router {
 	r := chi.NewRouter()
 
