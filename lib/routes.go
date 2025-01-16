@@ -1,11 +1,14 @@
 package lib
 
 type Routes struct {
-	API     string
-	Health  string
-	V1      string
-	Shorten string
-	Keys    keysRoutes
+	Localhost    string
+	API          string
+	Health       string
+	V1           string
+	Shorten      string
+	Keys         keysRoutes
+	Docs         string
+	DocsJsonFile string
 }
 
 type keysRoutes struct {
@@ -17,10 +20,11 @@ type keysRoutes struct {
 }
 
 var ROUTES = Routes{
-	API:     "/api",
-	Health:  "/health",
-	V1:      "/v1",
-	Shorten: "/shorten",
+	Localhost: "http://localhost:8080",
+	API:       "/api",
+	Health:    "/health",
+	V1:        "/v1",
+	Shorten:   "/shorten",
 	Keys: keysRoutes{
 		Base:     "/keys",
 		Validate: "/validate",
@@ -28,4 +32,6 @@ var ROUTES = Routes{
 		Update:   "/update",
 		Delete:   "/delete",
 	},
+	Docs:         "/docs/*",
+	DocsJsonFile: "/docs/doc.json",
 }

@@ -5,13 +5,41 @@ import (
 	"log"
 
 	"go-link-shortener/database"
+	_ "go-link-shortener/docs"
 	"go-link-shortener/models"
 	"go-link-shortener/utils"
 	"go-link-shortener/workers"
 )
 
-func main() {
+// @title Jerren's Link Shortener API
+// @version 1.0
+// @description ## This is the API documentation for Jerren's Link Shortener.
+// @description
+// @description # Important Note
+// @description **All routes are prefixed with `/api`**. For example:
+// @description - `/shorten` is actually accessed at `/api/shorten`
+// @description - `/v1/keys/validate` is actually accessed at `/api/v1/keys/validate`
+// @description
+// @description # Authentication
+// @description Most endpoints require API key authentication via the Authorization header.
+// @description If you `are` the system administrator, you can use the `root` key to access the API and create more keys (or make your own key).
+// @description If you `are not` the system administrator, you will need to acquire a key from the system administrator.
+//
+// @contact.name Jerren
+// @contact.url https://trifall.com
+// @contact.email jerren@trifall.com
 
+// @license.name License: Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host localhost:8080
+// @BasePath /api
+
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
+// @description API key authentication. Add 'Authorization' header with your API key.
+func main() {
 	log.Println("Starting Link Shortener")
 
 	env := utils.LoadEnv()

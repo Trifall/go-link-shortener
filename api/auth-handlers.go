@@ -20,6 +20,19 @@ type ContextValues struct {
 	IsAdmin   bool
 }
 
+// ValidateKeyHandler validates a secret key.
+// @Summary Validate a secret key
+// @Description Validates a secret key and returns its details if valid.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Success 200 {object} ValidateKeyResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 405 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /v1/keys/validate [post]
 func ValidateKeyHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		config := ErrorResponseConfig{
@@ -98,6 +111,20 @@ type GenerateKeyResponse struct {
 	Key     StrippedKey `json:"key"`
 }
 
+// GenerateKeyHandler generates a new secret key.
+// @Summary Generate a new secret key
+// @Description Generates a new secret key with the specified name and admin status.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param request body GenerateKeyRequest true "Key generation request"
+// @Success 200 {object} GenerateKeyResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 405 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /v1/keys/generate [post]
 func GenerateKeyHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		config := ErrorResponseConfig{
@@ -193,6 +220,20 @@ type DeleteKeyResponse struct {
 	Message string `json:"message"`
 }
 
+// DeleteKeyHandler deletes a secret key.
+// @Summary Delete a secret key
+// @Description Deletes a secret key by its value.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param request body DeleteKeyRequest true "Key deletion request"
+// @Success 200 {object} DeleteKeyResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 405 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /v1/keys/delete [post]
 func DeleteKeyHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		config := ErrorResponseConfig{
@@ -304,6 +345,20 @@ func buildUpdateRequest(req UpdateKeyRequest) auth.UpdateKeyS {
 	return updateReq
 }
 
+// UpdateKeyHandler updates an existing secret key.
+// @Summary Update a secret key
+// @Description Updates an existing secret key with new values for name, admin status, or active status.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param request body UpdateKeyRequest true "Key update request"
+// @Success 200 {object} UpdateKeyResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 405 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /v1/keys/update [post]
 func UpdateKeyHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		config := ErrorResponseConfig{
