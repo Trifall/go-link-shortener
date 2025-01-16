@@ -25,7 +25,13 @@ NC=\033[0m # No Color
 
 all: clean deps build test ## Build the application and run tests
 
-build: ## Build the application
+swagger: 
+	@go install github.com/swaggo/swag/cmd/swag@latest
+	@printf "$(BLUE)Constructing swagger docs...$(NC)\n"
+	@swag init
+	@printf "$(GREEN)Swagger docs constructed successfully!$(NC)\n"
+
+build: swagger ## Build the application
 	@printf "$(BLUE)Building application...$(NC)\n"
 	@go build ${LDFLAGS} -o ${GOBIN}/${BINARY_NAME} .
 	@printf "$(GREEN)Build complete! Binary location: ${GOBIN}/${BINARY_NAME}$(NC)\n"
@@ -46,12 +52,12 @@ deps: ## Download and verify dependencies
 	@go mod verify
 	@printf "$(GREEN)Dependencies ready$(NC)\n"
 
-test: ## Run tests
+test: swagger ## Run tests
 	@printf "$(BLUE)Running tests...$(NC)\n"
 	@ENVIRONMENT=test go test -v ./...
 	@printf "$(GREEN)Tests complete$(NC)\n"
 
-coverage: ## Run tests with coverage
+coverage: swagger ## Run tests with coverage
 	@printf "$(BLUE)Running tests with coverage...$(NC)\n"
 	@mkdir -p coverage
 	@ENVIRONMENT=test go test -v -coverprofile=coverage/coverage.out ./...
@@ -63,7 +69,7 @@ vet: ## Run go vet
 	@go vet ./...
 	@printf "$(GREEN)Vet check complete$(NC)\n"
 
-lint: ## Run linter
+lint: swagger ## Run linter
 	@printf "$(BLUE)Running linter...$(NC)\n"
 	@if command -v golangci-lint >/dev/null; then \
 		golangci-lint run ./...; \
@@ -73,7 +79,7 @@ lint: ## Run linter
 		exit 1; \
 	fi
 
-setup: ## Setup the project
+setup: swagger ## Setup the project
 	@make deps
 	@printf "$(BLUE)Setting up project...$(NC)\n"
 	@chmod +x ./scripts/*.sh
