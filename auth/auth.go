@@ -19,66 +19,76 @@ func GenerateSecretKey(newKeyName string, isAdmin bool) (*models.SecretKey, erro
 	}
 
 	if len(newKeyName) > 100 {
-		return nil, errors.New("new key name is too long")
+		return nil, errors.New(lib.ERRORS.NewKeyNameTooLong)
 	}
 
 	nameAlreadyExists := models.SearchKeyByName(db, newKeyName)
 
 	if newKeyName == lib.ROOT_USER_NAME || nameAlreadyExists != nil {
-		return nil, errors.New("key name already exists")
+		return nil, errors.New(lib.ERRORS.KeyNameAlreadyExists)
 	}
 
 	// create new key
 	key := models.CreateSecretKey(db, newKeyName, isAdmin)
 
 	if key == nil {
-		return nil, errors.New("failed to create new key")
+		return nil, errors.New(lib.ERRORS.FailedKeyCreation)
 	}
 
 	return key, nil
 }
 
-type UpdateKeyRequest struct {
-	SecretKeyToUpdate *string `json:"key_to_update"` // key to update
-	Name              *string `json:"name"`
-	Active            *bool   `json:"active"`
-	IsAdmin           *bool   `json:"is_admin"`
+type UpdateKeyS struct {
+	Name     *string
+	Key      *string
+	IsActive *bool
+	IsAdmin  *bool
 }
 
-func UpdateKey(request UpdateKeyRequest) (string, error) {
+func UpdateKey(request UpdateKeyS) (string, *models.SecretKey, error) {
 	db := database.GetDB()
 	if db == nil {
-		return "", errors.New(lib.ERRORS.Database)
+		return "", nil, errors.New(lib.ERRORS.Database)
+	}
+
+	if request.Key == nil {
+		return "", nil, errors.New(lib.ERRORS.KeyRequired)
+	}
+
+	updateKeyObj := models.SearchKeyByKey(db, *request.Key)
+	if updateKeyObj == nil {
+		return "", nil, errors.New(lib.ERRORS.KeyNotFound)
+	}
+	if updateKeyObj.Name == lib.ROOT_USER_NAME {
+		return "", nil, errors.New(lib.ERRORS.CannotUpdateRootUserKey)
 	}
 
 	if request.Name != nil {
 		if len(*request.Name) > 100 {
-			return "", errors.New("new key name is too long")
+			return "", nil, errors.New(lib.ERRORS.NewKeyNameTooLong)
 		}
-		return "", errors.New("key name required")
+		updateKeyObj.Name = *request.Name
 	}
 
-	if request.SecretKeyToUpdate == nil {
-		return "", errors.New("key to update required")
-	}
-
-	updateKeyObj := models.SearchKeyByKey(db, *request.SecretKeyToUpdate)
-
-	if updateKeyObj.Name == lib.ROOT_USER_NAME {
-		return "", errors.New("cannot update root user key")
-	}
-
-	if request.Active != nil {
-		updateKeyObj.Active = *request.Active
+	if request.IsActive != nil {
+		updateKeyObj.IsActive = *request.IsActive
 	}
 
 	if request.IsAdmin != nil {
 		updateKeyObj.IsAdmin = *request.IsAdmin
 	}
 
-	db.Save(&updateKeyObj)
+	// if all of the fields except for the key are nil, return an error with message "no fields to update"
+	if request.Name == nil && request.IsActive == nil && request.IsAdmin == nil {
+		return "", nil, errors.New(lib.ERRORS.NoNewFields)
+	}
 
-	return "Key updated successfully", nil
+	// TODO: could update this to return custom error
+	if err := db.Save(&updateKeyObj).Error; err != nil {
+		return "", nil, err
+	}
+
+	return "Key updated successfully", updateKeyObj, nil
 }
 
 func DeleteKeyByKey(keyToDelete string) (string, error) {
@@ -88,17 +98,17 @@ func DeleteKeyByKey(keyToDelete string) (string, error) {
 	}
 
 	if keyToDelete == "" {
-		return "", errors.New("key to delete required")
+		return "", errors.New(lib.ERRORS.KeyRequired)
 	}
 
 	deleteKeyObj := models.SearchKeyByKey(db, keyToDelete)
 
 	if deleteKeyObj == nil {
-		return "", errors.New("key not found")
+		return "", errors.New(lib.ERRORS.KeyNotFound)
 	}
 
 	if deleteKeyObj.Name == lib.ROOT_USER_NAME {
-		return "", errors.New("cannot delete root user key")
+		return "", errors.New(lib.ERRORS.CannotUpdateRootUserKey)
 	}
 
 	db.Delete(&deleteKeyObj)
@@ -113,17 +123,17 @@ func DeleteKeyByName(keyName string) (string, error) {
 	}
 
 	if keyName == "" {
-		return "", errors.New("key name required")
+		return "", errors.New(lib.ERRORS.KeyNameRequired)
 	}
 
 	deleteKeyObj := models.SearchKeyByName(db, keyName)
 
 	if deleteKeyObj == nil {
-		return "", errors.New("key not found")
+		return "", errors.New(lib.ERRORS.KeyNotFound)
 	}
 
 	if deleteKeyObj.Name == lib.ROOT_USER_NAME {
-		return "", errors.New("cannot delete root user key")
+		return "", errors.New(lib.ERRORS.CannotUpdateRootUserKey)
 	}
 
 	db.Delete(&deleteKeyObj)

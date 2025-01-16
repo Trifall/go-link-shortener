@@ -15,7 +15,7 @@ type SecretKey struct {
 	Name      string    `gorm:"type:varchar(100);not null"`
 	CreatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
 	UpdatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP;autoUpdateTime"`
-	Active    bool      `gorm:"not null;default:true"`
+	IsActive  bool      `gorm:"not null;default:true"`
 	IsAdmin   bool      `gorm:"not null;default:false"`
 }
 
@@ -31,7 +31,7 @@ type Link struct {
 	SecretKey     SecretKey `gorm:"foreignKey:CreatedBy;references:ID"` // Foreign key references SecretKey's ID
 	Visits        int       `gorm:"not null;default:0"`
 	LastVisitedAt *time.Time
-	Active        bool `gorm:"not null;default:true"`
+	IsActive      bool `gorm:"not null;default:true"`
 }
 
 // LinkVisit represents the link_visits table
@@ -114,12 +114,12 @@ func SetupDatabase(db *gorm.DB) error {
 // createIndexes sets up the necessary indexes
 func createIndexes(db *gorm.DB) error {
 	// Links indexes
-	db.Exec("CREATE INDEX IF NOT EXISTS idx_links_expires_at ON links(expires_at) WHERE active = true")
-	db.Exec("CREATE INDEX IF NOT EXISTS idx_links_shortened ON links(shortened) WHERE active = true")
+	db.Exec("CREATE INDEX IF NOT EXISTS idx_links_expires_at ON links(expires_at) WHERE is_active = true")
+	db.Exec("CREATE INDEX IF NOT EXISTS idx_links_shortened ON links(shortened) WHERE is_active = true")
 	db.Exec("CREATE INDEX IF NOT EXISTS idx_links_created_by ON links(created_by)")
 
 	// Secret keys index
-	db.Exec("CREATE INDEX IF NOT EXISTS idx_secret_keys_key ON secret_keys(key) WHERE active = true")
+	db.Exec("CREATE INDEX IF NOT EXISTS idx_secret_keys_key ON secret_keys(key) WHERE is_active = true")
 
 	// Requests indexes
 	db.Exec("CREATE INDEX IF NOT EXISTS idx_requests_ip_address_requested_at ON requests(ip_address, requested_at DESC)")

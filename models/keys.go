@@ -36,7 +36,7 @@ func CreateSecretKey(db *gorm.DB, name string, isAdmin bool) *SecretKey {
 		Name:      name,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
-		Active:    true,
+		IsActive:  true,
 		IsAdmin:   isAdmin,
 	}
 
@@ -57,7 +57,7 @@ func CreateRootUserKey(db *gorm.DB, key string) *string {
 		Name:      lib.ROOT_USER_NAME,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
-		Active:    true,
+		IsActive:  true,
 		IsAdmin:   true,
 	}
 

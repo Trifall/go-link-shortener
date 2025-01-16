@@ -27,7 +27,7 @@ func CreateLink(db *gorm.DB, redirectTo string, shortened string, expiresAt *tim
 // Find an active link by shortened URL
 func FindActiveLink(db *gorm.DB, shortened string) (*Link, error) {
 	var link Link
-	result := db.Where("shortened = ? AND active = ? AND (expires_at IS NULL OR expires_at > ?)",
+	result := db.Where("shortened = ? AND is_active = ? AND (expires_at IS NULL OR expires_at > ?)",
 		shortened, true, time.Now()).First(&link)
 
 	if result.Error != nil {

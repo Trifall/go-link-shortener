@@ -56,12 +56,12 @@ func (w *LinkExpirationWorker) processExpiredLinks() error {
 	err := w.db.Transaction(func(tx *gorm.DB) error {
 		// Find and update expired links
 		result := tx.Model(&models.Link{}).
-			Where("active = ? AND ("+
+			Where("is_active = ? AND ("+
 				"(expires_at IS NOT NULL AND expires_at < ?) OR "+
 				"(last_visited_at IS NOT NULL AND last_visited_at + INTERVAL '90 days' < ?)"+
 				")", true, time.Now(), time.Now()).
 			Updates(map[string]interface{}{
-				"active":     false,
+				"is_active":  false,
 				"shortened":  gorm.Expr("? || id::text", randomPrefix),
 				"updated_at": time.Now(),
 			}).

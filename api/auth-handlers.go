@@ -3,10 +3,12 @@ package api
 import (
 	"encoding/json"
 	"go-link-shortener/auth"
+	"go-link-shortener/lib"
 	"go-link-shortener/models"
 	"go-link-shortener/utils"
 	"log"
 	"net/http"
+	"time"
 )
 
 type ValidateKeyResponse struct {
@@ -14,7 +16,7 @@ type ValidateKeyResponse struct {
 	Name      string `json:"name"`
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
-	Active    bool   `json:"active"`
+	IsActive  bool   `json:"is_active"`
 	IsAdmin   bool   `json:"is_admin"`
 }
 
@@ -43,7 +45,7 @@ func ValidateKeyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctxValues, _ := GetContextValues(r)
-	log.Println("Validating - Key:'"+ctxValues.SecretKey+"', IsAdmin:", ctxValues.IsAdmin)
+	log.Println("Validate Key Request:'"+ctxValues.SecretKey+"', IsAdmin:", ctxValues.IsAdmin)
 
 	keyObj, err := auth.ValidateKey(ctxValues.SecretKey)
 	if err != nil {
@@ -65,7 +67,7 @@ func ValidateKeyHandler(w http.ResponseWriter, r *http.Request) {
 		Name:      keyObj.Name,
 		CreatedAt: utils.SafeString(&keyObj.CreatedAt),
 		UpdatedAt: utils.SafeString(&keyObj.UpdatedAt),
-		Active:    keyObj.Active,
+		IsActive:  keyObj.IsActive,
 		IsAdmin:   keyObj.IsAdmin,
 	}
 
@@ -94,10 +96,8 @@ type GenerateKeyRequest struct {
 }
 
 type GenerateKeyResponse struct {
-	Key       string `json:"key"`
-	Name      string `json:"name"`
-	CreatedAt string `json:"created_at"`
-	IsAdmin   bool   `json:"is_admin"`
+	Message string      `json:"message"`
+	Key     StrippedKey `json:"key"`
 }
 
 func GenerateKeyHandler(w http.ResponseWriter, r *http.Request) {
@@ -135,7 +135,7 @@ func GenerateKeyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctxValues, _ := GetContextValues(r)
-	log.Println("Generating key with name:'"+request.Name+"', IsAdmin:", request.IsAdmin, ". Requested by: '"+ctxValues.SecretKey+"'")
+	log.Println("Generate Key Request with name:'"+request.Name+"', IsAdmin:", request.IsAdmin, ". Requested by: '"+ctxValues.SecretKey+"'")
 
 	newKeyObj, err := auth.GenerateSecretKey(request.Name, request.IsAdmin)
 	if err != nil {
@@ -153,10 +153,14 @@ func GenerateKeyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := GenerateKeyResponse{
-		Key:       newKeyObj.Key,
-		Name:      newKeyObj.Name,
-		CreatedAt: utils.SafeString(&newKeyObj.CreatedAt),
-		IsAdmin:   newKeyObj.IsAdmin,
+		Message: "Key generated successfully",
+		Key: StrippedKey{
+			Key:       newKeyObj.Key,
+			Name:      newKeyObj.Name,
+			UpdatedAt: newKeyObj.UpdatedAt,
+			IsActive:  newKeyObj.IsActive,
+			IsAdmin:   newKeyObj.IsAdmin,
+		},
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -225,7 +229,7 @@ func DeleteKeyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctxValues, _ := GetContextValues(r)
-	log.Println("Deleting key:'" + request.Key + "'. Requested by:'" + ctxValues.SecretKey + "'")
+	log.Println("Delete Key Request:'" + request.Key + "'. Requested by:'" + ctxValues.SecretKey + "'")
 
 	message, err := auth.DeleteKeyByKey(request.Key)
 	if err != nil {
@@ -259,4 +263,133 @@ func DeleteKeyHandler(w http.ResponseWriter, r *http.Request) {
 
 	models.CreateLog(models.LogTypeInfo, models.LogSourceAuth,
 		"Deleted key: '"+ctxValues.SecretKey+"' from IP Address: '"+r.RemoteAddr+"'. Requested by: '"+ctxValues.SecretKey+"'")
+}
+
+type UpdateKeyRequest struct {
+	Key      string `json:"key"`
+	Name     string `json:"name"`
+	IsAdmin  *bool  `json:"is_admin"`
+	IsActive *bool  `json:"is_active"`
+}
+
+type UpdateKeyResponse struct {
+	Message string       `json:"message"`
+	Key     *StrippedKey `json:"key"`
+}
+
+type StrippedKey struct {
+	Key       string    `json:"key"`
+	Name      string    `json:"name"`
+	UpdatedAt time.Time `json:"updated_at"`
+	IsActive  bool      `json:"is_active"`
+	IsAdmin   bool      `json:"is_admin"`
+}
+
+func buildUpdateRequest(req UpdateKeyRequest) auth.UpdateKeyS {
+	var updateReq auth.UpdateKeyS
+
+	if req.Key != "" {
+		updateReq.Key = &req.Key
+	}
+	if req.Name != "" {
+		updateReq.Name = &req.Name
+	}
+	if req.IsActive != nil {
+		updateReq.IsActive = req.IsActive
+	}
+	if req.IsActive != nil {
+		updateReq.IsAdmin = req.IsAdmin
+	}
+
+	return updateReq
+}
+
+func UpdateKeyHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		config := ErrorResponseConfig{
+			Status:    http.StatusMethodNotAllowed,
+			Message:   "Method not allowed",
+			LogType:   models.LogTypeError,
+			LogSource: models.LogSourceAuth,
+			Request:   r,
+			CtxValues: nil,
+			Addendum:  "",
+		}
+		writeErrorResponse(w, config)
+		return
+	}
+
+	if CheckUnauthorized(w, r) {
+		return // CheckUnauthorized handles its own error response
+	}
+
+	var request UpdateKeyRequest
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		config := ErrorResponseConfig{
+			Status:    http.StatusBadRequest,
+			Message:   "Invalid request body",
+			LogType:   models.LogTypeError,
+			LogSource: models.LogSourceAuth,
+			Request:   r,
+			CtxValues: nil,
+			Addendum:  "",
+		}
+		writeErrorResponse(w, config)
+		return
+	}
+
+	ctxValues, _ := GetContextValues(r)
+	log.Println("Update Key Request:'"+request.Key+"', Name:'"+request.Name+"', IsAdmin:", request.IsAdmin, ", IsActive:", request.IsActive, ". Requested by:'"+ctxValues.SecretKey+"'")
+
+	updateRequest := buildUpdateRequest(request)
+
+	message, updatedKeyObj, err := auth.UpdateKey(updateRequest)
+	if err != nil {
+		config := ErrorResponseConfig{
+			Status:    http.StatusInternalServerError,
+			Message:   err.Error(),
+			LogType:   models.LogTypeError,
+			LogSource: models.LogSourceAuth,
+			Request:   r,
+			CtxValues: &ctxValues,
+			Addendum:  "Requested by: '" + ctxValues.SecretKey + "'",
+		}
+
+		if err.Error() == lib.ERRORS.NoNewFields {
+			config.Status = http.StatusBadRequest
+		}
+
+		writeErrorResponse(w, config)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	// Prepare and send response
+	response := UpdateKeyResponse{
+		Message: message,
+		Key: &StrippedKey{
+			Key:       updatedKeyObj.Key,
+			Name:      updatedKeyObj.Name,
+			UpdatedAt: updatedKeyObj.UpdatedAt,
+			IsActive:  updatedKeyObj.IsActive,
+			IsAdmin:   updatedKeyObj.IsAdmin,
+		},
+	}
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		config := ErrorResponseConfig{
+			Status:    http.StatusInternalServerError,
+			Message:   "Server Error",
+			LogType:   models.LogTypeError,
+			LogSource: models.LogSourceAuth,
+			Request:   r,
+			CtxValues: &ctxValues,
+			Addendum:  "Requested by: '" + ctxValues.SecretKey + "'",
+		}
+		writeErrorResponse(w, config)
+		return
+	}
+
+	models.CreateLog(models.LogTypeInfo, models.LogSourceAuth, "Updated key: '"+request.Key+"' from IP Address: '"+r.RemoteAddr+"'. Requested by: '"+ctxValues.SecretKey+"'")
 }
