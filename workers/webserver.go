@@ -2,6 +2,7 @@ package workers
 
 import (
 	"go-link-shortener/api"
+	"go-link-shortener/lib"
 	"log"
 	"net/http"
 
@@ -29,7 +30,7 @@ func InitializeWebserver() error {
 	r.Use(middleware.Logger)    // Log API requests
 	r.Use(middleware.Recoverer) // Recover from panics without crashing server
 
-	r.Mount("/api", api.InitializeAPIRouter())
+	r.Mount(lib.ROUTES.API, api.InitializeAPIRouter())
 
 	log.Println("✔️  API initialized successfully.")
 	log.Println("✔️  Starting server on :8080")

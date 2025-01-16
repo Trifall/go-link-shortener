@@ -8,16 +8,11 @@ import (
 	"go-link-shortener/utils"
 	"log"
 	"net/http"
-	"time"
 )
 
 type ValidateKeyResponse struct {
-	Key       string `json:"key"`
-	Name      string `json:"name"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
-	IsActive  bool   `json:"is_active"`
-	IsAdmin   bool   `json:"is_admin"`
+	Message string      `json:"message"`
+	Key     StrippedKey `json:"key"`
 }
 
 type ContextValues struct {
@@ -63,12 +58,15 @@ func ValidateKeyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := ValidateKeyResponse{
-		Key:       keyObj.Key,
-		Name:      keyObj.Name,
-		CreatedAt: utils.SafeString(&keyObj.CreatedAt),
-		UpdatedAt: utils.SafeString(&keyObj.UpdatedAt),
-		IsActive:  keyObj.IsActive,
-		IsAdmin:   keyObj.IsAdmin,
+		Message: "Key validated successfully",
+		Key: StrippedKey{
+			Key:       keyObj.Key,
+			Name:      keyObj.Name,
+			CreatedAt: utils.SafeString(&keyObj.CreatedAt),
+			UpdatedAt: utils.SafeString(&keyObj.UpdatedAt),
+			IsActive:  keyObj.IsActive,
+			IsAdmin:   keyObj.IsAdmin,
+		},
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -157,7 +155,8 @@ func GenerateKeyHandler(w http.ResponseWriter, r *http.Request) {
 		Key: StrippedKey{
 			Key:       newKeyObj.Key,
 			Name:      newKeyObj.Name,
-			UpdatedAt: newKeyObj.UpdatedAt,
+			CreatedAt: utils.SafeString(&newKeyObj.CreatedAt),
+			UpdatedAt: utils.SafeString(&newKeyObj.UpdatedAt),
 			IsActive:  newKeyObj.IsActive,
 			IsAdmin:   newKeyObj.IsAdmin,
 		},
@@ -278,11 +277,12 @@ type UpdateKeyResponse struct {
 }
 
 type StrippedKey struct {
-	Key       string    `json:"key"`
-	Name      string    `json:"name"`
-	UpdatedAt time.Time `json:"updated_at"`
-	IsActive  bool      `json:"is_active"`
-	IsAdmin   bool      `json:"is_admin"`
+	Key       string `json:"key"`
+	Name      string `json:"name"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
+	IsActive  bool   `json:"is_active"`
+	IsAdmin   bool   `json:"is_admin"`
 }
 
 func buildUpdateRequest(req UpdateKeyRequest) auth.UpdateKeyS {
@@ -371,7 +371,8 @@ func UpdateKeyHandler(w http.ResponseWriter, r *http.Request) {
 		Key: &StrippedKey{
 			Key:       updatedKeyObj.Key,
 			Name:      updatedKeyObj.Name,
-			UpdatedAt: updatedKeyObj.UpdatedAt,
+			CreatedAt: utils.SafeString(&updatedKeyObj.CreatedAt),
+			UpdatedAt: utils.SafeString(&updatedKeyObj.UpdatedAt),
 			IsActive:  updatedKeyObj.IsActive,
 			IsAdmin:   updatedKeyObj.IsAdmin,
 		},
