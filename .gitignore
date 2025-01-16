@@ -53,3 +53,4 @@ bin/*
 bin
 *.tmp
 .pgpass
+docs/*
