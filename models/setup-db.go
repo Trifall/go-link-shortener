@@ -10,48 +10,48 @@ import (
 
 // SecretKey represents the secret_keys table
 type SecretKey struct {
-	ID        uuid.UUID `gorm:"type:uuid;primary_key;default:uuid_generate_v4()"` // Primary key
-	Key       string    `gorm:"type:varchar(64);unique;not null"`
-	Name      string    `gorm:"type:varchar(100);not null"`
-	CreatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
-	UpdatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP;autoUpdateTime"`
-	IsActive  bool      `gorm:"not null;default:true"`
-	IsAdmin   bool      `gorm:"not null;default:false"`
+	ID        uuid.UUID `gorm:"type:uuid;primary_key;default:uuid_generate_v4()" json:"id"`
+	Key       string    `gorm:"type:varchar(64);unique;not null" json:"key"`
+	Name      string    `gorm:"type:varchar(100);not null" json:"name"`
+	CreatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
+	UpdatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP;autoUpdateTime" json:"updated_at"`
+	IsActive  bool      `gorm:"not null;default:true" json:"is_active"`
+	IsAdmin   bool      `gorm:"not null;default:false" json:"is_admin"`
 }
 
 // Link represents the links table
 type Link struct {
-	ID            uuid.UUID `gorm:"type:uuid;primary_key;default:uuid_generate_v4()"`
-	RedirectTo    string    `gorm:"type:varchar(2048);not null"`
-	Shortened     string    `gorm:"type:varchar(100);unique;not null"`
-	ExpiresAt     *time.Time
-	CreatedAt     time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
-	UpdatedAt     time.Time `gorm:"not null;default:CURRENT_TIMESTAMP;autoUpdateTime"`
-	CreatedBy     uuid.UUID `gorm:"type:uuid;not null"`                 // Reference the SecretKey's ID
-	SecretKey     SecretKey `gorm:"foreignKey:CreatedBy;references:ID"` // Foreign key references SecretKey's ID
-	Visits        int       `gorm:"not null;default:0"`
-	LastVisitedAt *time.Time
-	IsActive      bool `gorm:"not null;default:true"`
+	ID            uuid.UUID  `gorm:"type:uuid;primary_key;default:uuid_generate_v4()" json:"id"`
+	RedirectTo    string     `gorm:"type:varchar(2048);not null" json:"redirect_to"`
+	Shortened     string     `gorm:"type:varchar(100);unique;not null" json:"shortened"`
+	ExpiresAt     *time.Time `json:"expires_at"`
+	CreatedAt     time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
+	UpdatedAt     time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP;autoUpdateTime" json:"updated_at"`
+	CreatedBy     uuid.UUID  `gorm:"type:uuid;not null" json:"created_by"`
+	SecretKey     SecretKey  `gorm:"foreignKey:CreatedBy;references:ID" json:"secret_key"`
+	Visits        int        `gorm:"not null;default:0" json:"visits"`
+	LastVisitedAt *time.Time `json:"last_visited_at"`
+	IsActive      bool       `gorm:"not null;default:true" json:"is_active"`
 }
 
 // LinkVisit represents the link_visits table
 type LinkVisit struct {
-	ID        uuid.UUID `gorm:"type:uuid;primary_key;default:uuid_generate_v4()"`
-	LinkID    uuid.UUID `gorm:"type:uuid;not null"`
-	Link      Link      `gorm:"foreignKey:LinkID"`
-	VisitedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
-	UserAgent *string   `gorm:"type:text"`
-	IPAddress *string   `gorm:"type:inet"`
-	Referrer  *string   `gorm:"type:text"`
+	ID        uuid.UUID `gorm:"type:uuid;primary_key;default:uuid_generate_v4()" json:"id"`
+	LinkID    uuid.UUID `gorm:"type:uuid;not null" json:"link_id"`
+	Link      Link      `gorm:"foreignKey:LinkID" json:"link"`
+	VisitedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"visited_at"`
+	UserAgent *string   `gorm:"type:text" json:"user_agent,omitempty"`
+	IPAddress *string   `gorm:"type:inet" json:"ip_address,omitempty"`
+	Referrer  *string   `gorm:"type:text" json:"referrer,omitempty"`
 }
 
 // Request represents the requests table
 type Request struct {
-	ID          uuid.UUID `gorm:"type:uuid;primary_key;default:uuid_generate_v4()"`
-	IPAddress   string    `gorm:"type:inet;not null"`
-	RequestedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
-	SecretKeyID *uuid.UUID
-	SecretKey   *SecretKey `gorm:"foreignKey:SecretKeyID"`
+	ID          uuid.UUID  `gorm:"type:uuid;primary_key;default:uuid_generate_v4()" json:"id"`
+	IPAddress   string     `gorm:"type:inet;not null" json:"ip_address"`
+	RequestedAt time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"requested_at"`
+	SecretKeyID *uuid.UUID `json:"secret_key_id,omitempty"`
+	SecretKey   *SecretKey `gorm:"foreignKey:SecretKeyID" json:"secret_key,omitempty"`
 }
 
 // LogType represents the type of log entry
@@ -76,11 +76,11 @@ const (
 
 // Log represents the logs table
 type Log struct {
-	ID        uuid.UUID `gorm:"type:uuid;primary_key;default:uuid_generate_v4()"`
-	Timestamp time.Time `gorm:"not null;default:CURRENT_TIMESTAMP;index"`
-	Type      LogType   `gorm:"type:varchar(10);not null;index"`
-	Source    LogSource `gorm:"type:varchar(20);not null;index"`
-	Message   string    `gorm:"type:text;not null"`
+	ID        uuid.UUID `gorm:"type:uuid;primary_key;default:uuid_generate_v4()" json:"id"`
+	Timestamp time.Time `gorm:"not null;default:CURRENT_TIMESTAMP;index" json:"timestamp"`
+	Type      LogType   `gorm:"type:varchar(10);not null;index" json:"type"`
+	Source    LogSource `gorm:"type:varchar(20);not null;index" json:"source"`
+	Message   string    `gorm:"type:text;not null" json:"message"`
 }
 
 // SetupDatabase initializes the database schema and indexes

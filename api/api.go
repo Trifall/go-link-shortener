@@ -45,7 +45,10 @@ func V1Router() chi.Router {
 			}
 		})
 
-		r.Post(lib.ROUTES.Shorten, ShortenHandler)
+		r.Route(lib.ROUTES.Links.Base, func(r chi.Router) {
+			r.Post(lib.ROUTES.Links.Shorten, ShortenHandler)
+			r.Post(lib.ROUTES.Links.Retrieve, RetrieveLinkHandler)
+		})
 
 		// !Admin Routes Below!
 		r.Group(func(r chi.Router) {

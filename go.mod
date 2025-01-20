@@ -5,6 +5,7 @@ go 1.23
 require (
 	github.com/go-chi/chi v1.5.5
 	github.com/go-chi/cors v1.2.1
+	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/swaggo/http-swagger v1.3.4

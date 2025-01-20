@@ -5,8 +5,8 @@ type Routes struct {
 	API          string
 	Health       string
 	V1           string
-	Shorten      string
 	Keys         keysRoutes
+	Links        linksRoutes
 	Docs         string
 	DocsJsonFile string
 }
@@ -19,18 +19,28 @@ type keysRoutes struct {
 	Delete   string
 }
 
+type linksRoutes struct {
+	Base     string
+	Shorten  string
+	Retrieve string
+}
+
 var ROUTES = Routes{
 	Localhost: "http://localhost:8080",
 	API:       "/api",
 	Health:    "/health",
 	V1:        "/v1",
-	Shorten:   "/shorten",
 	Keys: keysRoutes{
 		Base:     "/keys",
 		Validate: "/validate",
 		Generate: "/generate",
 		Update:   "/update",
 		Delete:   "/delete",
+	},
+	Links: linksRoutes{
+		Base:     "/links",
+		Shorten:  "/shorten",
+		Retrieve: "/retrieve",
 	},
 	Docs:         "/docs/*",
 	DocsJsonFile: "/docs/doc.json",
