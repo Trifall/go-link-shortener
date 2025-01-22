@@ -37,7 +37,7 @@ func InitializeWebserver() error {
 
 	log.Println("⏳ Setting up swagger docs...")
 
-	r.Get(lib.ROUTES.Docs, httpSwagger.Handler(
+	r.Get(lib.ROUTES.Docs+"/*", httpSwagger.Handler(
 		httpSwagger.URL(lib.ROUTES.Localhost+lib.ROUTES.DocsJsonFile),
 		httpSwagger.AfterScript(craftPostScript()),
 		httpSwagger.UIConfig(map[string]string{
@@ -49,6 +49,10 @@ func InitializeWebserver() error {
 	))
 
 	log.Println("✔️  Swagger docs set up successfully.")
+
+	log.Println("⏳ Setting up redirect router...")
+	r.Mount("/", api.RedirectRouter())
+	log.Println("✔️  Redirect router set up successfully.")
 
 	log.Println("✔️  Starting server on :8080")
 

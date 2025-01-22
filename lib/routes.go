@@ -23,6 +23,8 @@ type linksRoutes struct {
 	Base     string
 	Shorten  string
 	Retrieve string
+	Delete   string
+	Update   string
 }
 
 var ROUTES = Routes{
@@ -41,7 +43,19 @@ var ROUTES = Routes{
 		Base:     "/links",
 		Shorten:  "/shorten",
 		Retrieve: "/retrieve",
+		Delete:   "/delete",
+		Update:   "/update",
 	},
-	Docs:         "/docs/*",
+	Docs:         "/docs",
 	DocsJsonFile: "/docs/doc.json",
+}
+
+type ReservedRoutes struct {
+	API  string
+	Docs string
+}
+
+var RESERVED_ROUTES = ReservedRoutes{
+	API:  "api",
+	Docs: "docs",
 }

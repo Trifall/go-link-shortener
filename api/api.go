@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"go-link-shortener/database"
 	"go-link-shortener/lib"
 	"net/http"
 
@@ -48,6 +49,8 @@ func V1Router() chi.Router {
 		r.Route(lib.ROUTES.Links.Base, func(r chi.Router) {
 			r.Post(lib.ROUTES.Links.Shorten, ShortenHandler)
 			r.Post(lib.ROUTES.Links.Retrieve, RetrieveLinkHandler)
+			r.Post(lib.ROUTES.Links.Delete, DeleteLinkHandler)
+			r.Post(lib.ROUTES.Links.Update, UpdateLinkHandler)
 		})
 
 		// !Admin Routes Below!
@@ -61,6 +64,37 @@ func V1Router() chi.Router {
 				r.Post(lib.ROUTES.Keys.Delete, DeleteKeyHandler)
 			})
 		})
+
 	})
+
+	return r
+}
+
+func RedirectRouter() chi.Router {
+	r := chi.NewRouter()
+
+	r.Get("/*", func(w http.ResponseWriter, r *http.Request) {
+		// blank path, redirect to docs
+		if r.URL.Path == "/" {
+			http.Redirect(w, r, lib.ROUTES.Docs+"/", http.StatusMovedPermanently)
+			return
+		}
+		// remove leading slash
+		fixedPath := r.URL.Path[1:]
+		originalURL, err := RetrieveRedirectURL(database.GetDB(), fixedPath)
+
+		if err != nil {
+			// check if err is "record not found"
+			if err.Error() == "record not found" {
+				http.Error(w, "Link with shortened string '"+fixedPath+"' not found", http.StatusNotFound)
+				return
+			}
+			// if not, return internal server error
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+		http.Redirect(w, r, originalURL, http.StatusMovedPermanently)
+	})
+
 	return r
 }

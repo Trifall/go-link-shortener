@@ -8,6 +8,7 @@ import (
 	"go-link-shortener/database"
 	"go-link-shortener/lib"
 	"go-link-shortener/models"
+	"go-link-shortener/utils"
 	"log"
 	"math/big"
 	"net/http"
@@ -32,6 +33,20 @@ type ShortenResponse struct {
 	ShortenedURL string `json:"shortened_url"`
 }
 
+// ShortenHandler shortens a URL.
+// @Summary Shorten a URL
+// @Description Shortens a given URL and returns the shortened version.
+// @Tags links
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param request body ShortenRequest true "URL shortening request"
+// @Success 200 {object} ShortenResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 405 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /v1/links/shorten [post]
 func ShortenHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -123,7 +138,6 @@ func ShortenHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// CreateLink creates a new shortened link in the database after validating the input.
 func CreateLink(db *gorm.DB, req ShortenRequest, createdBy uuid.UUID) (*ShortenResponse, error) {
 	// Validate RedirectTo
 	if req.RedirectTo == "" {
@@ -147,7 +161,7 @@ func CreateLink(db *gorm.DB, req ShortenRequest, createdBy uuid.UUID) (*ShortenR
 			return nil, fmt.Errorf("failed to check custom URL: %v", err)
 		}
 		if exists {
-			return nil, errors.New("custom_url is already in use")
+			return nil, errors.New("custom_url is already in use, or is reserved")
 		}
 		shortened = req.CustomURL
 	} else {
@@ -193,6 +207,15 @@ func validateAndNormalizeURL(rawURL string) (string, error) {
 		return "", fmt.Errorf("protocol %s is not allowed", u.Scheme)
 	}
 
+	// validate that the redirect URL is not the same as the public site URL
+	env := utils.LoadEnv()
+
+	if env.PUBLIC_SITE_URL != "" {
+		if u.Host == env.PUBLIC_SITE_URL {
+			return "", errors.New("cannot redirect to link shortener")
+		}
+	}
+
 	return u.String(), nil
 }
 
@@ -201,8 +224,14 @@ func isAlphanumeric(s string) bool {
 	return regexp.MustCompile(`^[a-zA-Z0-9]+$`).MatchString(s)
 }
 
-// isShortenedURLTaken checks if the given shortened URL already exists in the database.
+// isShortenedURLTaken checks if the given shortened URL already exists in the database or if it matches any reserved routes.
 func isShortenedURLTaken(db *gorm.DB, url string) (bool, error) {
+	// Check if the URL matches any reserved routes
+	if url == lib.RESERVED_ROUTES.API || url == lib.RESERVED_ROUTES.Docs {
+		return true, nil // URL is a reserved route, so it's "taken"
+	}
+
+	// Proceed with the database check
 	var link models.Link
 	result := db.Where("shortened = ?", url).First(&link)
 	if result.Error == nil {
@@ -224,17 +253,17 @@ func generateUniqueShortURL(db *gorm.DB) (string, error) {
 		}
 
 		shortURL, err := generateRandomAlphanumeric(length)
+
 		if err != nil {
-			return "", err
+			continue
 		}
 
 		exists, err := isShortenedURLTaken(db, shortURL)
-		if err != nil {
-			return "", err
+		if err != nil || exists {
+			continue
 		}
-		if !exists {
-			return shortURL, nil
-		}
+
+		return shortURL, nil
 	}
 	return "", errors.New("failed to generate a unique short URL after multiple attempts")
 }
@@ -289,6 +318,20 @@ type SecretKeyResponse struct {
 	IsActive  bool      `json:"is_active"`
 }
 
+// RetrieveLinkHandler retrieves details of a shortened link.
+// @Summary Retrieve a shortened link
+// @Description Retrieves details of a shortened link by its shortened URL.
+// @Tags links
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param request body RetrieveLinkRequest true "Link retrieval request"
+// @Success 200 {object} RetrieveLinkResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 405 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /v1/links/retrieve [post]
 func RetrieveLinkHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -361,7 +404,7 @@ func ToRetrieveLinkResponse(l models.Link) RetrieveLinkResponse {
 // RetrieveLink, searches for a link by its shortened URL and returns the link object
 func RetrieveLink(db *gorm.DB, shortened string) (*models.Link, error) {
 	var link models.Link
-	// Preload the SecretKey relationship
+	// preload the SecretKey relationship
 	result := db.Preload("SecretKey").Where("shortened = ?", shortened).First(&link)
 
 	if result.Error != nil {
@@ -369,4 +412,321 @@ func RetrieveLink(db *gorm.DB, shortened string) (*models.Link, error) {
 	}
 
 	return &link, nil
+}
+
+func RetrieveRedirectURL(db *gorm.DB, shortened string) (string, error) {
+	var link models.Link
+	result := db.Where("shortened = ?", shortened).First(&link)
+
+	if result.Error != nil {
+		return "", result.Error
+	}
+
+	if link.RedirectTo == "" {
+		return "", errors.New("invalid redirect")
+	}
+
+	log.Println("RetrieveRedirectURL: shortened " + shortened + " redirect_to " + link.RedirectTo)
+
+	return link.RedirectTo, nil
+}
+
+type DeleteLinkRequest struct {
+	Shortened string `json:"shortened"`
+}
+
+type DeleteLinkResponse struct {
+	Message string `json:"message"`
+}
+
+// DeleteLinkHandler deletes a shortened link.
+// @Summary Delete a shortened link
+// @Description Deletes a shortened link by its shortened URL.
+// @Tags links
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param request body DeleteLinkRequest true "Link deletion request"
+// @Success 200 {object} DeleteLinkResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 405 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /v1/links/delete [post]
+func DeleteLinkHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	var request DeleteLinkRequest
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		config := ErrorResponseConfig{
+			Status:    http.StatusBadRequest,
+			Message:   "Invalid request body",
+			LogType:   models.LogTypeError,
+			LogSource: models.LogSourceLinks,
+			Request:   r,
+		}
+		writeErrorResponse(w, config)
+		return
+	}
+
+	ctxValues, _ := GetContextValues(r)
+	db := database.GetDB()
+
+	// retrieve the link to be deleted
+	link, err := RetrieveLink(db, request.Shortened)
+	if err != nil {
+		config := ErrorResponseConfig{
+			Status:    http.StatusNotFound,
+			Message:   "Link not found",
+			LogType:   models.LogTypeError,
+			LogSource: models.LogSourceLinks,
+			Request:   r,
+			CtxValues: &ctxValues,
+			Addendum:  fmt.Sprintf("Shortened URL: %s", request.Shortened),
+		}
+		writeErrorResponse(w, config)
+		return
+	}
+
+	// autho
+	if !ctxValues.IsAdmin {
+		// check ownership
+		secretKey := models.SearchKeyByKey(db, ctxValues.SecretKey)
+		if secretKey == nil {
+			config := ErrorResponseConfig{
+				Status:    http.StatusInternalServerError,
+				Message:   lib.ERRORS.KeyNotFound,
+				LogType:   models.LogTypeError,
+				LogSource: models.LogSourceLinks,
+				Request:   r,
+				CtxValues: &ctxValues,
+				Addendum:  "Secret key not found in database",
+			}
+			writeErrorResponse(w, config)
+			return
+		}
+
+		if secretKey.ID != link.CreatedBy {
+			config := ErrorResponseConfig{
+				Status:    http.StatusUnauthorized,
+				Message:   "Unauthorized to delete this link",
+				LogType:   models.LogTypeWarning,
+				LogSource: models.LogSourceLinks,
+				Request:   r,
+				CtxValues: &ctxValues,
+				Addendum:  fmt.Sprintf("User ID: %s, Link Creator: %s", secretKey.ID, link.CreatedBy),
+			}
+			writeErrorResponse(w, config)
+			return
+		}
+	}
+
+	// delete link
+	if err := db.Delete(&link).Error; err != nil {
+		config := ErrorResponseConfig{
+			Status:    http.StatusInternalServerError,
+			Message:   "Failed to delete link",
+			LogType:   models.LogTypeError,
+			LogSource: models.LogSourceLinks,
+			Request:   r,
+			CtxValues: &ctxValues,
+			Addendum:  fmt.Sprintf("Error: %v", err),
+		}
+		writeErrorResponse(w, config)
+		return
+	}
+
+	// Success response
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": "Link deleted successfully",
+	})
+}
+
+type UpdateLinkRequest struct {
+	Shortened    string     `json:"shortened"`
+	RedirectTo   *string    `json:"redirect_to,omitempty"`
+	NewShortened *string    `json:"new_shortened,omitempty"`
+	ExpiresAt    *time.Time `json:"expires_at,omitempty"`
+	IsActive     *bool      `json:"is_active,omitempty"`
+}
+
+type UpdateLinkResponse struct {
+	ID            uuid.UUID         `json:"id"`
+	RedirectTo    string            `json:"redirect_to"`
+	Shortened     string            `json:"shortened"`
+	ExpiresAt     *time.Time        `json:"expires_at"`
+	CreatedAt     time.Time         `json:"created_at"`
+	UpdatedAt     time.Time         `json:"updated_at"`
+	CreatedBy     uuid.UUID         `json:"created_by"`
+	SecretKey     SecretKeyResponse `json:"secret_key"`
+	Visits        int               `json:"visits"`
+	LastVisitedAt *time.Time        `json:"last_visited_at"`
+	IsActive      bool              `json:"is_active"`
+}
+
+// UpdateLinkHandler updates a shortened link.
+// @Summary Update a shortened link
+// @Description Updates a shortened link with new values for redirect URL, shortened URL, expiration date, or active status.
+// @Tags links
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param request body UpdateLinkRequest true "Link update request"
+// @Success 200 {object} UpdateLinkResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 405 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /v1/links/update [post]
+func UpdateLinkHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	var request UpdateLinkRequest
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		config := ErrorResponseConfig{
+			Status:    http.StatusBadRequest,
+			Message:   "Invalid request body",
+			LogType:   models.LogTypeError,
+			LogSource: models.LogSourceLinks,
+			Request:   r,
+		}
+		writeErrorResponse(w, config)
+		return
+	}
+
+	ctxValues, _ := GetContextValues(r)
+	db := database.GetDB()
+
+	// retrieve existing link
+	link, err := RetrieveLink(db, request.Shortened)
+	if err != nil {
+		config := ErrorResponseConfig{
+			Status:    http.StatusNotFound,
+			Message:   "Link not found",
+			LogType:   models.LogTypeError,
+			LogSource: models.LogSourceLinks,
+			Request:   r,
+			CtxValues: &ctxValues,
+			Addendum:  fmt.Sprintf("Shortened: %s", request.Shortened),
+		}
+		writeErrorResponse(w, config)
+		return
+	}
+
+	// auth check
+	if !ctxValues.IsAdmin {
+		secretKey := models.SearchKeyByKey(db, ctxValues.SecretKey)
+		if secretKey == nil || secretKey.ID != link.CreatedBy {
+			config := ErrorResponseConfig{
+				Status:    http.StatusUnauthorized,
+				Message:   "Unauthorized to update this link",
+				LogType:   models.LogTypeWarning,
+				LogSource: models.LogSourceLinks,
+				Request:   r,
+				CtxValues: &ctxValues,
+			}
+			writeErrorResponse(w, config)
+			return
+		}
+	}
+
+	// validate and apply updates
+	if request.RedirectTo != nil {
+		normalized, err := validateAndNormalizeURL(*request.RedirectTo)
+		if err != nil {
+			config := ErrorResponseConfig{
+				Status:    http.StatusBadRequest,
+				Message:   fmt.Sprintf("Invalid redirect URL: %v", err),
+				LogType:   models.LogTypeError,
+				LogSource: models.LogSourceLinks,
+				Request:   r,
+				CtxValues: &ctxValues,
+			}
+			writeErrorResponse(w, config)
+			return
+		}
+		link.RedirectTo = normalized
+	}
+
+	if request.NewShortened != nil {
+		newShort := *request.NewShortened
+		if newShort != link.Shortened {
+			if !isAlphanumeric(newShort) {
+				config := ErrorResponseConfig{
+					Status:    http.StatusBadRequest,
+					Message:   "New shortened URL must be alphanumeric",
+					LogType:   models.LogTypeError,
+					LogSource: models.LogSourceLinks,
+					Request:   r,
+					CtxValues: &ctxValues,
+				}
+				writeErrorResponse(w, config)
+				return
+			}
+
+			exists, err := isShortenedURLTaken(db, newShort)
+			if err != nil {
+				config := ErrorResponseConfig{
+					Status:    http.StatusInternalServerError,
+					Message:   "Failed to validate new shortened URL",
+					LogType:   models.LogTypeError,
+					LogSource: models.LogSourceLinks,
+					Request:   r,
+					CtxValues: &ctxValues,
+				}
+				writeErrorResponse(w, config)
+				return
+			}
+			if exists {
+				config := ErrorResponseConfig{
+					Status:    http.StatusConflict,
+					Message:   "New shortened URL already exists",
+					LogType:   models.LogTypeError,
+					LogSource: models.LogSourceLinks,
+					Request:   r,
+					CtxValues: &ctxValues,
+				}
+				writeErrorResponse(w, config)
+				return
+			}
+			link.Shortened = newShort
+		}
+	}
+
+	if request.ExpiresAt != nil {
+		link.ExpiresAt = request.ExpiresAt
+	}
+
+	if request.IsActive != nil {
+		link.IsActive = *request.IsActive
+	}
+
+	// Save updates
+	if err := db.Save(&link).Error; err != nil {
+		config := ErrorResponseConfig{
+			Status:    http.StatusInternalServerError,
+			Message:   "Failed to update link",
+			LogType:   models.LogTypeError,
+			LogSource: models.LogSourceLinks,
+			Request:   r,
+			CtxValues: &ctxValues,
+			Addendum:  fmt.Sprintf("Error: %v", err),
+		}
+		writeErrorResponse(w, config)
+		return
+	}
+
+	// Return updated link
+	response := ToRetrieveLinkResponse(*link)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
 }

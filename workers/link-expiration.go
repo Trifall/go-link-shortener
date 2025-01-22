@@ -19,7 +19,7 @@ type LinkExpirationWorker struct {
 func NewLinkExpirationWorker(db *gorm.DB) *LinkExpirationWorker {
 	return &LinkExpirationWorker{
 		db:       db,
-		interval: time.Minute,
+		interval: time.Minute / 2,
 	}
 }
 
@@ -40,22 +40,34 @@ func (w *LinkExpirationWorker) Start(ctx context.Context) error {
 }
 
 func (w *LinkExpirationWorker) processExpiredLinks() error {
-	// Generate random prefix for expired links
 	prefix := make([]byte, 12)
 	if _, err := rand.Read(prefix); err != nil {
 		return err
 	}
 	randomPrefix := "expired_" + base64.URLEncoding.EncodeToString(prefix)[:12] + "_"
 
-	type Result struct {
+	var affectedRows int64
+	var results []struct {
 		ID string
 	}
-	var results []Result
 
-	// Use GORM transaction
 	err := w.db.Transaction(func(tx *gorm.DB) error {
-		// Find and update expired links
-		result := tx.Model(&models.Link{}).
+		// First get the count of records to be updated
+		if err := tx.Model(&models.Link{}).
+			Where("is_active = ? AND ("+
+				"(expires_at IS NOT NULL AND expires_at < ?) OR "+
+				"(last_visited_at IS NOT NULL AND last_visited_at + INTERVAL '90 days' < ?)"+
+				")", true, time.Now(), time.Now()).
+			Count(&affectedRows).Error; err != nil {
+			return err
+		}
+
+		if affectedRows == 0 {
+			return nil
+		}
+
+		// Perform the update and return affected IDs
+		return tx.Model(&models.Link{}).
 			Where("is_active = ? AND ("+
 				"(expires_at IS NOT NULL AND expires_at < ?) OR "+
 				"(last_visited_at IS NOT NULL AND last_visited_at + INTERVAL '90 days' < ?)"+
@@ -65,22 +77,15 @@ func (w *LinkExpirationWorker) processExpiredLinks() error {
 				"shortened":  gorm.Expr("? || id::text", randomPrefix),
 				"updated_at": time.Now(),
 			}).
-			Select("id").
-			Find(&results)
-
-		if result.Error != nil {
-			return result.Error
-		}
-
-		return nil
+			Scan(&results).Error
 	})
 
 	if err != nil {
 		return err
 	}
 
-	if len(results) > 0 {
-		log.Printf("Processed %d expired links", len(results))
+	if affectedRows > 0 {
+		log.Printf("Processed %d expired links", affectedRows)
 	}
 
 	return nil

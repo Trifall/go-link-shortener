@@ -8,14 +8,15 @@ import (
 )
 
 type Env struct {
-	DBHost        string
-	DBUser        string
-	DBPassword    string
-	DBName        string
-	DBPort        string
-	DBSSLMode     string
-	ROOT_USER_KEY string
-	LOG_LEVEL     string
+	DBHost          string
+	DBUser          string
+	DBPassword      string
+	DBName          string
+	DBPort          string
+	DBSSLMode       string
+	ROOT_USER_KEY   string
+	LOG_LEVEL       string
+	PUBLIC_SITE_URL string
 }
 
 func CheckTestEnvironment() bool {
@@ -51,14 +52,15 @@ func LoadEnv() *Env {
 	}
 
 	env := Env{
-		DBHost:        os.Getenv("DB_HOST"),
-		DBUser:        os.Getenv("DB_USER"),
-		DBPassword:    os.Getenv("DB_PASSWORD"),
-		DBName:        os.Getenv("DB_NAME"),
-		DBPort:        os.Getenv("DB_PORT"),
-		DBSSLMode:     os.Getenv("DB_SSLMODE"),
-		LOG_LEVEL:     os.Getenv("LOG_LEVEL"),
-		ROOT_USER_KEY: os.Getenv("ROOT_USER_KEY"),
+		DBHost:          os.Getenv("DB_HOST"),
+		DBUser:          os.Getenv("DB_USER"),
+		DBPassword:      os.Getenv("DB_PASSWORD"),
+		DBName:          os.Getenv("DB_NAME"),
+		DBPort:          os.Getenv("DB_PORT"),
+		DBSSLMode:       os.Getenv("DB_SSLMODE"),
+		LOG_LEVEL:       os.Getenv("LOG_LEVEL"),
+		ROOT_USER_KEY:   os.Getenv("ROOT_USER_KEY"),
+		PUBLIC_SITE_URL: os.Getenv("PUBLIC_SITE_URL"),
 	}
 
 	log.Println("✔️  Environment variables loaded successfully.")
