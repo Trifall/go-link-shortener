@@ -394,7 +394,6 @@ func ToRetrieveLinkResponse(l models.Link) RetrieveLinkResponse {
 		CreatedAt:     l.CreatedAt,
 		UpdatedAt:     l.UpdatedAt,
 		CreatedBy:     l.CreatedBy,
-		SecretKey:     ToSecretKeyResponse(l.SecretKey),
 		Visits:        l.Visits,
 		LastVisitedAt: l.LastVisitedAt,
 		IsActive:      l.IsActive,
@@ -556,17 +555,16 @@ type UpdateLinkRequest struct {
 }
 
 type UpdateLinkResponse struct {
-	ID            uuid.UUID         `json:"id"`
-	RedirectTo    string            `json:"redirect_to"`
-	Shortened     string            `json:"shortened"`
-	ExpiresAt     *time.Time        `json:"expires_at"`
-	CreatedAt     time.Time         `json:"created_at"`
-	UpdatedAt     time.Time         `json:"updated_at"`
-	CreatedBy     uuid.UUID         `json:"created_by"`
-	SecretKey     SecretKeyResponse `json:"secret_key"`
-	Visits        int               `json:"visits"`
-	LastVisitedAt *time.Time        `json:"last_visited_at"`
-	IsActive      bool              `json:"is_active"`
+	ID            uuid.UUID  `json:"id"`
+	RedirectTo    string     `json:"redirect_to"`
+	Shortened     string     `json:"shortened"`
+	ExpiresAt     *time.Time `json:"expires_at"`
+	CreatedAt     time.Time  `json:"created_at"`
+	UpdatedAt     time.Time  `json:"updated_at"`
+	CreatedBy     uuid.UUID  `json:"created_by"`
+	Visits        int        `json:"visits"`
+	LastVisitedAt *time.Time `json:"last_visited_at"`
+	IsActive      bool       `json:"is_active"`
 }
 
 // UpdateLinkHandler updates a shortened link.
