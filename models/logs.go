@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func CreateLog(logType LogType, logSource LogSource, message string) {
+func CreateLog(logType LogType, logSource LogSource, message string, remoteAddress string) {
 	db := database.GetDB()
 	if db == nil {
 		log.Println(lib.ERRORS.Database)

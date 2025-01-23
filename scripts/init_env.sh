@@ -4,47 +4,66 @@
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
-NC='\033[0m'
+NC='\033[0m' # No Color
 
-# Check if credentials file exists
-if [ ! -f "db_credentials.tmp" ]; then
-  echo -e "${RED}[SETUP_ENV] Error: Database credentials not found. Exiting process.${NC}"
-  exit 1
+# Initialize variables from existing .env if present
+if [ -f .env ]; then
+  echo -e "${BLUE}[SETUP_ENV] Loading existing .env file...${NC}"
+  export $(grep -v '^#' .env | xargs)
 fi
 
-# Read credentials from temporary file
-DB_USER=$(grep "Database User:" db_credentials.tmp | cut -d' ' -f3)
-DB_PASSWORD=$(grep "Password:" db_credentials.tmp | cut -d' ' -f2)
-DB_NAME=$(grep "Database Name:" db_credentials.tmp | cut -d' ' -f3)
-ROOT_USER_KEY=$(openssl rand -base64 32)
+# Load temporary credentials if available
+if [ -f db_credentials.tmp ]; then
+  echo -e "${BLUE}[SETUP_ENV] Loading temporary credentials...${NC}"
+  TEMP_USER=$(grep "Database User:" db_credentials.tmp | awk '{print $3}')
+  TEMP_NAME=$(grep "Database Name:" db_credentials.tmp | awk '{print $3}')
+  TEMP_PASS=$(grep "Password:" db_credentials.tmp | awk '{print $2}')
 
-# Create .env and .env.example files
-echo -e "${BLUE}Creating environment files...${NC}"
+  # Update only if temp values exist
+  [ -n "$TEMP_USER" ] && DB_USER="$TEMP_USER"
+  [ -n "$TEMP_NAME" ] && DB_NAME="$TEMP_NAME"
+  [ -n "$TEMP_PASS" ] && DB_PASSWORD="$TEMP_PASS"
+fi
 
-# Create .env file with actual credentials
-cat >.env <<EOF
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=$DB_USER
-DB_PASSWORD=$DB_PASSWORD
-DB_NAME=$DB_NAME
-DB_SSLMODE=disable
-ROOT_USER_KEY=$ROOT_USER_KEY
-EOF
+# Generate root user key if not defined
+if [ -z "$ROOT_USER_KEY" ]; then
+  echo -e "${BLUE}[SETUP_ENV] Generating root user key...${NC}"
+  ROOT_USER_KEY=$(openssl rand -base64 32)
+fi
 
-# Create .env.example without sensitive data
-cat >.env.example <<EOF
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=your_db_user
-DB_PASSWORD=your_db_password
-DB_NAME=your_db_name
-DB_SSLMODE=disable
-EOF
+# Create/update .env file with preserved comments
+echo -e "${BLUE}[SETUP_ENV] Creating/updating environment files...${NC}"
+{
+  echo "#postgres info"
+  echo "DB_HOST=${DB_HOST:-localhost}"
+  echo "DB_PORT=${DB_PORT:-5434}"
+  echo "DB_USER=${DB_USER:-urlapp}"
+  echo "DB_PASSWORD=${DB_PASSWORD:-your_db_password}"
+  echo "DB_NAME=${DB_NAME:-urlshortener}"
+  echo "DB_SSLMODE=${DB_SSLMODE:-disable}"
+  echo ""
+  echo "# Server Port (default: 8080)"
+  echo "SERVER_PORT=${SERVER_PORT:-8080}"
+  echo "# required to create the initial root user, use 'openssl rand -base64 32' to generate one"
+  echo "ROOT_USER_KEY=${ROOT_USER_KEY}"
+  echo "# can be error, warning, info"
+  echo "LOG_LEVEL=${LOG_LEVEL:-error}"
+  echo "# depends on where you are hosting it, used to filter out for loops"
+  echo "PUBLIC_SITE_URL=${PUBLIC_SITE_URL:-example.com}"
+  echo "# enable API documentation at the /docs/ endpoint"
+  echo "ENABLE_DOCS=${ENABLE_DOCS:-true}"
+} >.env.tmp
 
-# Create .gitignore if it doesn't exist
-if [ ! -f ".gitignore" ]; then
-  echo -e "${BLUE}Creating .gitignore file...${NC}"
+# Preserve existing comments and structure from .env.example
+if [ -f .env.example ]; then
+  awk '/^#/ {print} /^[^#]/ {while(getline line < ".env.tmp") print line; close(".env.tmp"); exit}' .env.example >.env
+else
+  mv .env.tmp .env
+fi
+
+# Create .gitignore if missing
+if [ ! -f .gitignore ]; then
+  echo -e "${BLUE}[SETUP_ENV] Creating .gitignore...${NC}"
   cat >.gitignore <<EOF
 # Environment files
 .env
@@ -52,16 +71,18 @@ if [ ! -f ".gitignore" ]; then
 !.env.example
 
 # Database credentials
-scripts/db_credentials.tmp
+db_credentials.tmp
 
 # Compiled binary
 bin/
 EOF
 fi
 
-echo -e "${BLUE}Removing temporary credentials file...${NC}"
-# Remove credentials file
-rm db_credentials.tmp
-echo -e "${GREEN}Successfully removed temporary credentials file${NC}"
+# Cleanup temporary files
+rm -f .env.tmp
+if [ -f db_credentials.tmp ]; then
+  echo -e "${BLUE}[SETUP_ENV] Removing temporary credentials file...${NC}"
+  rm db_credentials.tmp
+fi
 
-echo -e "${GREEN}Environment setup complete!${NC}"
+echo -e "${GREEN}[SETUP_ENV] Environment setup complete!${NC}"

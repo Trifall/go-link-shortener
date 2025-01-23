@@ -4,7 +4,10 @@ import (
 	"encoding/json"
 	"go-link-shortener/database"
 	"go-link-shortener/lib"
+	"go-link-shortener/models"
+	"go-link-shortener/utils"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi"
 )
@@ -73,15 +76,24 @@ func V1Router() chi.Router {
 func RedirectRouter() chi.Router {
 	r := chi.NewRouter()
 
+	env := utils.LoadEnv()
+
 	r.Get("/*", func(w http.ResponseWriter, r *http.Request) {
 		// blank path, redirect to docs
 		if r.URL.Path == "/" {
-			http.Redirect(w, r, lib.ROUTES.Docs+"/", http.StatusMovedPermanently)
+			if env.ENABLE_DOCS == "false" {
+				http.Redirect(w, r, lib.ROUTES.NotFound, http.StatusFound)
+				return
+			}
+			http.Redirect(w, r, lib.ROUTES.Docs+"/", http.StatusFound)
 			return
 		}
+
+		db := database.GetDB()
+
 		// remove leading slash
 		fixedPath := r.URL.Path[1:]
-		originalURL, err := RetrieveRedirectURL(database.GetDB(), fixedPath)
+		linkObj, err := RetrieveRedirectURL(db, fixedPath)
 
 		if err != nil {
 			// check if err is "record not found"
@@ -93,7 +105,25 @@ func RedirectRouter() chi.Router {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
-		http.Redirect(w, r, originalURL, http.StatusMovedPermanently)
+
+		// update the last visited time, increment visits, and add a new record to the link_visits table
+		now := time.Now()
+		linkObj.Visits += 1
+		linkObj.LastVisitedAt = &now
+		db.Save(linkObj)
+
+		userAgent := r.Header.Get("User-Agent")
+		ipAddress := r.RemoteAddr
+		referrer := r.Header.Get("Referer")
+
+		db.Model(&linkObj).Association("Visits").Append(&models.LinkVisit{
+			VisitedAt: now,
+			UserAgent: &userAgent,
+			IPAddress: &ipAddress,
+			Referrer:  &referrer,
+		})
+
+		http.Redirect(w, r, linkObj.RedirectTo, http.StatusMovedPermanently)
 	})
 
 	return r

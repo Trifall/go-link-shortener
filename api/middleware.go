@@ -16,7 +16,7 @@ const secretKeyContextKey ContextKey = "secret_key"
 func LogMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		models.CreateLog(models.LogTypeInfo, models.LogSourceRequest,
-			"Request from IP Address: "+r.RemoteAddr+" for "+r.URL.Path)
+			"Request for "+r.URL.Path, r.RemoteAddr)
 		next.ServeHTTP(w, r)
 	})
 }

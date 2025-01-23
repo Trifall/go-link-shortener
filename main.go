@@ -32,7 +32,6 @@ import (
 // @license.name License: Apache 2.0
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
 
-// @host localhost:8080
 // @BasePath /api
 
 // @securityDefinitions.apikey ApiKeyAuth
@@ -42,7 +41,9 @@ import (
 func main() {
 	log.Println("Starting Link Shortener")
 
+	log.Println("⏳ Loading environment variables...")
 	env := utils.LoadEnv()
+	log.Println("✔️  Environment variables loaded successfully.")
 
 	database.SetDB(database.ConnectToDatabase(env))
 
@@ -69,7 +70,7 @@ func main() {
 	log.Println("✔️  Background workers set up successfully.")
 
 	// Spin up the webserver
-	err := workers.InitializeWebserver()
+	err := workers.InitializeWebserver(env)
 	if err != nil {
 		log.Fatal(err)
 	}

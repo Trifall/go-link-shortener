@@ -3,6 +3,7 @@ package workers
 import (
 	"go-link-shortener/api"
 	"go-link-shortener/lib"
+	"go-link-shortener/utils"
 	"log"
 	"net/http"
 
@@ -12,7 +13,7 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
-func InitializeWebserver() error {
+func InitializeWebserver(env *utils.Env) error {
 	log.Println("⏳ Initializing API...")
 	// Create a new chi router
 	r := chi.NewRouter()
@@ -35,29 +36,35 @@ func InitializeWebserver() error {
 
 	log.Println("✔️  API initialized successfully.")
 
-	log.Println("⏳ Setting up swagger docs...")
+	if env.ENABLE_DOCS == "true" {
 
-	r.Get(lib.ROUTES.Docs+"/*", httpSwagger.Handler(
-		httpSwagger.URL(lib.ROUTES.Localhost+lib.ROUTES.DocsJsonFile),
-		httpSwagger.AfterScript(craftPostScript()),
-		httpSwagger.UIConfig(map[string]string{
-			"deepLinking":     "true",
-			"filter":          "false",
-			"showExtensions":  "true",
-			"syntaxHighlight": `{"active":"true"}`,
-		}),
-	))
+		log.Println("⏳ Setting up swagger API docs...")
 
-	log.Println("✔️  Swagger docs set up successfully.")
+		r.Get(lib.ROUTES.Docs+"/*", httpSwagger.Handler(
+			httpSwagger.URL(lib.ROUTES.Localhost+":"+env.SERVER_PORT+lib.ROUTES.DocsJsonFile),
+			httpSwagger.AfterScript(craftPostScript()),
+			httpSwagger.UIConfig(map[string]string{
+				"deepLinking":     "true",
+				"filter":          "false",
+				"showExtensions":  "true",
+				"syntaxHighlight": `{"active":"true"}`,
+			}),
+		))
+
+		log.Println("✔️  Swagger API docs set up successfully.")
+	} else {
+		log.Println("⚠️  Swagger API docs are disabled. To enable them, set ENABLE_DOCS=true in your .env file.")
+	}
 
 	log.Println("⏳ Setting up redirect router...")
 	r.Mount("/", api.RedirectRouter())
 	log.Println("✔️  Redirect router set up successfully.")
 
-	log.Println("✔️  Starting server on :8080")
+	portString := ":" + env.SERVER_PORT
+	log.Println("✔️  Starting server on port " + portString)
 
 	// Start the server
-	if err := http.ListenAndServe(":8080", r); err != nil {
+	if err := http.ListenAndServe(portString, r); err != nil {
 		return err
 	}
 

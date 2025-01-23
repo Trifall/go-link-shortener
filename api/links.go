@@ -9,7 +9,6 @@ import (
 	"go-link-shortener/lib"
 	"go-link-shortener/models"
 	"go-link-shortener/utils"
-	"log"
 	"math/big"
 	"net/http"
 	"net/url"
@@ -84,8 +83,6 @@ func ShortenHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// fetch the ID of the secret key from the database
-	log.Println("Fetching secret key ID from database...")
 	db := database.GetDB()
 	if db == nil {
 		config := ErrorResponseConfig{
@@ -227,7 +224,7 @@ func isAlphanumeric(s string) bool {
 // isShortenedURLTaken checks if the given shortened URL already exists in the database or if it matches any reserved routes.
 func isShortenedURLTaken(db *gorm.DB, url string) (bool, error) {
 	// Check if the URL matches any reserved routes
-	if url == lib.RESERVED_ROUTES.API || url == lib.RESERVED_ROUTES.Docs {
+	if url == lib.RESERVED_ROUTES.API || url == lib.RESERVED_ROUTES.Docs || url == lib.RESERVED_ROUTES.NotFound {
 		return true, nil // URL is a reserved route, so it's "taken"
 	}
 
@@ -412,21 +409,19 @@ func RetrieveLink(db *gorm.DB, shortened string) (*models.Link, error) {
 	return &link, nil
 }
 
-func RetrieveRedirectURL(db *gorm.DB, shortened string) (string, error) {
+func RetrieveRedirectURL(db *gorm.DB, shortened string) (*models.Link, error) {
 	var link models.Link
 	result := db.Where("shortened = ?", shortened).First(&link)
 
 	if result.Error != nil {
-		return "", result.Error
+		return nil, result.Error
 	}
 
 	if link.RedirectTo == "" {
-		return "", errors.New("invalid redirect")
+		return nil, errors.New("invalid redirect")
 	}
 
-	log.Println("RetrieveRedirectURL: shortened " + shortened + " redirect_to " + link.RedirectTo)
-
-	return link.RedirectTo, nil
+	return &link, nil
 }
 
 type DeleteLinkRequest struct {

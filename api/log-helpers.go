@@ -31,7 +31,7 @@ func writeErrorResponse(w http.ResponseWriter, config ErrorResponseConfig) {
 		logMessage += " | " + config.Addendum
 	}
 	// add addendum to log message
-	models.CreateLog(config.LogType, config.LogSource, logMessage)
+	models.CreateLog(config.LogType, config.LogSource, logMessage, config.Request.RemoteAddr)
 
 	if err := json.NewEncoder(w).Encode(errorResponse); err != nil {
 		log.Printf("Error encoding response: %v", err)

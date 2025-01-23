@@ -53,7 +53,6 @@ func ValidateKeyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctxValues, _ := GetContextValues(r)
-	log.Println("Validate Key Request:'"+ctxValues.SecretKey+"', IsAdmin:", ctxValues.IsAdmin)
 
 	keyObj, err := auth.ValidateKey(ctxValues.SecretKey)
 	if err != nil {
@@ -98,7 +97,7 @@ func ValidateKeyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	models.CreateLog(models.LogTypeInfo, models.LogSourceAuth,
-		"Validated key from IP Address: "+r.RemoteAddr+" with name: "+keyObj.Name+". Requested by: "+ctxValues.SecretKey)
+		"Validated key with name: "+keyObj.Name+". Requested by: "+ctxValues.SecretKey, r.RemoteAddr)
 }
 
 type GenerateKeyRequest struct {
@@ -209,7 +208,7 @@ func GenerateKeyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	models.CreateLog(models.LogTypeInfo, models.LogSourceAuth,
-		"Generated a new key from IP Address: '"+r.RemoteAddr+"' with name: '"+request.Name+"'. Requested by: '"+ctxValues.SecretKey+"'")
+		"Generated a new key with name: '"+request.Name+"'. Requested by: '"+ctxValues.SecretKey+"'", r.RemoteAddr)
 }
 
 type DeleteKeyRequest struct {
@@ -269,7 +268,7 @@ func DeleteKeyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctxValues, _ := GetContextValues(r)
-	log.Println("Delete Key Request:'" + request.Key + "'. Requested by:'" + ctxValues.SecretKey + "'")
+	log.Println("Delete Key Request:'" + request.Key + "'. Requested by: '" + ctxValues.SecretKey + "'")
 
 	message, err := auth.DeleteKeyByKey(request.Key)
 	if err != nil {
@@ -302,7 +301,7 @@ func DeleteKeyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	models.CreateLog(models.LogTypeInfo, models.LogSourceAuth,
-		"Deleted key: '"+ctxValues.SecretKey+"' from IP Address: '"+r.RemoteAddr+"'. Requested by: '"+ctxValues.SecretKey+"'")
+		"Deleted key: '"+ctxValues.SecretKey+"'. Requested by: '"+ctxValues.SecretKey+"'", r.RemoteAddr)
 }
 
 type UpdateKeyRequest struct {
@@ -394,7 +393,7 @@ func UpdateKeyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctxValues, _ := GetContextValues(r)
-	log.Println("Update Key Request:'"+request.Key+"', Name:'"+request.Name+"', IsAdmin:", request.IsAdmin, ", IsActive:", request.IsActive, ". Requested by:'"+ctxValues.SecretKey+"'")
+	log.Println("Update Key Request:'"+request.Key+"', Name:'"+request.Name+"', IsAdmin:", request.IsAdmin, ", IsActive:", request.IsActive, ". Requested by: '"+ctxValues.SecretKey+"'")
 
 	updateRequest := buildUpdateRequest(request)
 
@@ -447,5 +446,5 @@ func UpdateKeyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	models.CreateLog(models.LogTypeInfo, models.LogSourceAuth, "Updated key: '"+request.Key+"' from IP Address: '"+r.RemoteAddr+"'. Requested by: '"+ctxValues.SecretKey+"'")
+	models.CreateLog(models.LogTypeInfo, models.LogSourceAuth, "Updated key: '"+request.Key+"'. Requested by: '"+ctxValues.SecretKey+"'", r.RemoteAddr)
 }

@@ -107,19 +107,16 @@ func TestLoadEnv(t *testing.T) {
 		os.Setenv("DB_NAME", expectedEnv["DB_NAME"])
 		os.Setenv("DB_PORT", expectedEnv["DB_PORT"])
 		os.Setenv("DB_SSLMODE", expectedEnv["DB_SSLMODE"])
+		os.Setenv("ROOT_USER_KEY", expectedEnv["ROOT_USER_KEY"])
 
 		// Optional environment variables are not set
 		os.Setenv("LOG_LEVEL", "")
-		os.Setenv("ROOT_USER_KEY", "")
 
 		env := LoadEnv()
 
 		// Verify that the optional environment variables are empty
 		if env.LOG_LEVEL != "" {
 			t.Errorf("Expected LOG_LEVEL to be empty, got '%s'", env.LOG_LEVEL)
-		}
-		if env.ROOT_USER_KEY != "" {
-			t.Errorf("Expected ROOT_USER_KEY to be empty, got '%s'", env.ROOT_USER_KEY)
 		}
 	})
 }

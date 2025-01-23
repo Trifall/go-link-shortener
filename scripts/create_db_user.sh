@@ -23,13 +23,23 @@ if [[ $USER_EXISTS == "1" || $DB_EXISTS == "1" ]]; then
 
   if [[ $DELETE_CONFIRM == "Y" || $DELETE_CONFIRM == "y" ]]; then
     echo -e "${BLUE}Deleting existing user and database...${NC}"
-    psql -U postgres <<EOF
--- Drop the database if it exists
-DROP DATABASE IF EXISTS $DB_NAME;
 
--- Drop the user if it exists
-DROP USER IF EXISTS $DB_USER;
-EOF
+    # Terminate all active connections to the database
+    echo -e "${BLUE}Terminating active connections to the database...${NC}"
+    psql -U postgres -c "SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$DB_NAME';"
+
+    # Drop the database if it exists
+    echo -e "${BLUE}Dropping database...${NC}"
+    psql -U postgres -c "DROP DATABASE IF EXISTS $DB_NAME;"
+
+    # Terminate all active connections to the user
+    echo -e "${BLUE}Terminating active connections to the user...${NC}"
+    psql -U postgres -c "SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.usename = '$DB_USER';"
+
+    # Drop the user if it exists
+    echo -e "${BLUE}Dropping user...${NC}"
+    psql -U postgres -c "DROP USER IF EXISTS $DB_USER;"
+
     echo -e "${GREEN}Existing user and database deleted.${NC}"
   else
     echo -e "${RED}Exiting without making changes.${NC}"
@@ -44,8 +54,8 @@ psql -U postgres <<EOF
 -- Create user with generated password
 CREATE USER $DB_USER WITH ENCRYPTED PASSWORD '$RANDOM_PASSWORD';
 
--- Create database if it doesn't exist
-CREATE DATABASE $DB_NAME;
+-- Create database with the user as the owner
+CREATE DATABASE $DB_NAME OWNER $DB_USER;
 
 -- Grant necessary permissions
 GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;

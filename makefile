@@ -28,12 +28,12 @@ all: clean deps build test ## Build the application and run tests
 swagger: 
 	@go install github.com/swaggo/swag/cmd/swag@latest
 	@printf "$(BLUE)Constructing swagger docs...$(NC)\n"
-	@swag init
+	@swag init -q
 	@printf "$(GREEN)Swagger docs constructed successfully!$(NC)\n"
 
 build: swagger ## Build the application
 	@printf "$(BLUE)Building application...$(NC)\n"
-	@go build ${LDFLAGS} -o ${GOBIN}/${BINARY_NAME} .
+	@LOCAL_BUILD=true go build ${LDFLAGS} -o ${GOBIN}/${BINARY_NAME} .
 	@printf "$(GREEN)Build complete! Binary location: ${GOBIN}/${BINARY_NAME}$(NC)\n"
 
 clean: ## Clean build files
@@ -44,7 +44,7 @@ clean: ## Clean build files
 
 run: build ## Build and run the application
 	@printf "$(BLUE)Starting server...$(NC)\n"
-	@${GOBIN}/${BINARY_NAME}
+	@LOCAL_BUILD=true ${GOBIN}/${BINARY_NAME}
 
 deps: ## Download and verify dependencies
 	@printf "$(BLUE)Downloading dependencies...$(NC)\n"
@@ -90,6 +90,56 @@ setup: swagger ## Setup the project
 	@printf "$(GREEN)Use 'make run' to start the server.$(NC)\n"
 	@printf "$(GREEN)Use 'make help' for more commands.$(NC)\n"
 	@printf "$(GREEN)=================================================$(NC)\n"
+
+docker-build: ## Build the Docker image
+	@printf "$(BLUE)Building Docker image...$(NC)\n"
+	@docker-compose build
+	@printf "$(GREEN)Docker image built successfully!$(NC)\n"
+
+docker-run: ## Run the application using Docker Compose
+	@printf "$(BLUE)Starting Docker containers in interactive mode...$(NC)\n"
+	@docker-compose up
+	@printf "$(GREEN)Docker containers started!$(NC)\n"
+
+docker-rebuild-app: ## Rebuild the application inside the Docker container
+	@printf "$(BLUE)Rebuilding application inside Docker container...$(NC)\n"
+	@docker-compose build app && docker-compose restart app
+	@printf "$(GREEN)Application rebuilt successfully!$(NC)\n"
+
+docker-rebuild-db: ## Rebuild the database inside the Docker container
+	@printf "$(BLUE)Rebuilding database inside Docker container...$(NC)\n"
+	@docker-compose build db && docker-compose restart db
+	@printf "$(GREEN)Database rebuilt successfully!$(NC)\n"
+
+docker-rebuild-all: docker-rebuild-app docker-rebuild-db ## Rebuild the application and database inside the Docker container
+	@printf "$(GREEN)All containers rebuilt successfully!$(NC)\n"
+	@printf "$(GREEN)You can now run 'make docker-run' to start the application and database.$(NC)\n"
+	@printf "$(GREEN)Use 'make help' for more commands.$(NC)\n"
+	@printf "$(GREEN)=================================================$(NC)\n"
+	@printf "$(GREEN)Docker commands complete!$(NC)\n"
+
+docker-stop: ## Stop the Docker containers
+	@printf "$(BLUE)Stopping Docker containers...$(NC)\n"
+	@docker-compose stop
+	@printf "$(GREEN)Docker containers stopped!$(NC)\n"
+	@printf "$(GREEN)Use 'make docker-start' to start the containers.$(NC)\n"
+
+docker-start: ## Start the Docker containers
+	@printf "$(BLUE)Starting Docker containers in detached mode...$(NC)\n"
+	@docker-compose up -d
+	@printf "$(GREEN)Docker containers started!$(NC)\n"
+	@printf "$(GREEN)Use 'make docker-stop' to stop the containers.$(NC)\n"
+	@printf "$(GREEN)=================================================$(NC)\n"
+	@printf "$(GREEN)Docker commands complete!$(NC)\n"
+	@printf "$(GREEN)You can now access the application at http://localhost:$(SERVER_PORT)$(NC)\n"
+	@printf "$(GREEN)The API docs are available at http://localhost:$(SERVER_PORT)/docs/$(NC)\n"
+	@printf "$(GREEN)Use 'make help' for more commands.$(NC)\n"
+	@printf "$(GREEN)=================================================$(NC)\n"
+
+docker-restart: ## Restart the Docker containers
+	@printf "$(BLUE)Restarting Docker containers...$(NC)\n"
+	@docker-compose restart
+	@printf "$(GREEN)Docker containers restarted!$(NC)\n"
 
 help: ## Display available commands
 	@echo "Available commands:"

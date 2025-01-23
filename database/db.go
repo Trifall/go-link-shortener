@@ -1,6 +1,7 @@
 package database
 
 import (
+	"fmt"
 	"go-link-shortener/utils"
 	"log"
 
@@ -32,13 +33,15 @@ type Env struct {
 func ConnectToDatabase(env *utils.Env) *gorm.DB {
 	log.Println("⏳ Connecting to Postgres database...")
 
-	dsn := "host=" + env.DBHost +
-		" user=" + env.DBUser +
-		" password=" + env.DBPassword +
-		" dbname=" + env.DBName +
-		" port=" + env.DBPort +
-		" sslmode=" + env.DBSSLMode +
-		" TimeZone=UTC"
+	dsn := fmt.Sprintf(
+		"host=%s user=%s password=%s dbname=%s port=%s sslmode=%s TimeZone=UTC",
+		env.DBHost,
+		env.DBUser,
+		env.DBPassword,
+		env.DBName,
+		env.DBPort,
+		env.DBSSLMode,
+	)
 
 	loggerMode := logger.Silent
 	loggerStrVal := "Silent"

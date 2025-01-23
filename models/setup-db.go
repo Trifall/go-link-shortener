@@ -47,11 +47,9 @@ type LinkVisit struct {
 
 // Request represents the requests table
 type Request struct {
-	ID          uuid.UUID  `gorm:"type:uuid;primary_key;default:uuid_generate_v4()" json:"id"`
-	IPAddress   string     `gorm:"type:inet;not null" json:"ip_address"`
-	RequestedAt time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"requested_at"`
-	SecretKeyID *uuid.UUID `json:"secret_key_id,omitempty"`
-	SecretKey   *SecretKey `gorm:"foreignKey:SecretKeyID" json:"secret_key,omitempty"`
+	ID          uuid.UUID `gorm:"type:uuid;primary_key;default:uuid_generate_v4()" json:"id"`
+	IPAddress   string    `gorm:"type:inet;not null" json:"ip_address"`
+	RequestedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"requested_at"`
 }
 
 // LogType represents the type of log entry
@@ -123,7 +121,6 @@ func createIndexes(db *gorm.DB) error {
 
 	// Requests indexes
 	db.Exec("CREATE INDEX IF NOT EXISTS idx_requests_ip_address_requested_at ON requests(ip_address, requested_at DESC)")
-	db.Exec("CREATE INDEX IF NOT EXISTS idx_requests_secret_key_id_requested_at ON requests(secret_key_id, requested_at DESC)")
 	db.Exec("CREATE INDEX IF NOT EXISTS idx_requests_requested_at ON requests(requested_at DESC)")
 
 	// Logs indexes (GORM will automatically create indexes for timestamp, type, and source due to the index tags)

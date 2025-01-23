@@ -17,6 +17,8 @@ type Env struct {
 	ROOT_USER_KEY   string
 	LOG_LEVEL       string
 	PUBLIC_SITE_URL string
+	ENABLE_DOCS     string
+	SERVER_PORT     string
 }
 
 func CheckTestEnvironment() bool {
@@ -24,31 +26,40 @@ func CheckTestEnvironment() bool {
 	return ok
 }
 
-func LoadEnv() *Env {
-	log.Println("⏳ Loading environment variables...")
+func CheckLocalEnvironment() bool {
+	_, ok := os.LookupEnv("LOCAL_BUILD")
+	return ok
+}
 
-	ok := CheckTestEnvironment()
+func LoadEnv() *Env {
+	isTestMode := CheckTestEnvironment()
+	isLocalMode := CheckLocalEnvironment()
 
 	var err error
-	if ok {
+	if isTestMode {
 		err = godotenv.Load("../.env.example")
-	} else {
-		err = godotenv.Load()
-	}
-
-	if err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
-	}
-
-	// verify that all required environment variables are set
-	requiredEnvVars := []string{"DB_HOST", "DB_USER", "DB_PASSWORD", "DB_NAME", "DB_PORT", "DB_SSLMODE"}
-	for _, envVar := range requiredEnvVars {
-		if os.Getenv(envVar) == "" {
-			if ok {
-				panic("Missing required environment variables")
-			}
-			log.Fatalf("Error: %s environment variable is not set", envVar)
+		if err != nil {
+			log.Panicf("Error: Couldn't load env example in test mode. Make sure to create a .env.example file and set the required environment variables.")
 		}
+	} else if isLocalMode {
+		err = godotenv.Load()
+		if err != nil {
+			log.Panicf("Error: Couldn't load env in local mode. Make sure to create a .env file and set the required environment variables.")
+		}
+	}
+
+	dbPort := os.Getenv("DB_PORT")
+
+	// if not in local or test mode, set the the port to 5434
+	if !isLocalMode && !isTestMode {
+		dbPort = "5434"
+	}
+
+	serverPort := os.Getenv("SERVER_PORT")
+
+	if serverPort == "" {
+		log.Println("🛈  Setting server port to default: 8080")
+		serverPort = "8080"
 	}
 
 	env := Env{
@@ -56,13 +67,22 @@ func LoadEnv() *Env {
 		DBUser:          os.Getenv("DB_USER"),
 		DBPassword:      os.Getenv("DB_PASSWORD"),
 		DBName:          os.Getenv("DB_NAME"),
-		DBPort:          os.Getenv("DB_PORT"),
+		DBPort:          dbPort,
 		DBSSLMode:       os.Getenv("DB_SSLMODE"),
 		LOG_LEVEL:       os.Getenv("LOG_LEVEL"),
 		ROOT_USER_KEY:   os.Getenv("ROOT_USER_KEY"),
 		PUBLIC_SITE_URL: os.Getenv("PUBLIC_SITE_URL"),
+		ENABLE_DOCS:     os.Getenv("ENABLE_DOCS"),
+		SERVER_PORT:     os.Getenv("SERVER_PORT"),
 	}
 
-	log.Println("✔️  Environment variables loaded successfully.")
+	// verify that all required environment variables are set
+	requiredEnvVars := []string{"DB_HOST", "DB_USER", "DB_PASSWORD", "DB_NAME", "DB_PORT", "DB_SSLMODE", "ROOT_USER_KEY"}
+	for _, envVar := range requiredEnvVars {
+		if os.Getenv(envVar) == "" {
+			log.Panicf("Error: %s environment variable is not set", envVar)
+		}
+	}
+
 	return &env
 }

@@ -9,6 +9,7 @@ type Routes struct {
 	Links        linksRoutes
 	Docs         string
 	DocsJsonFile string
+	NotFound     string
 }
 
 type keysRoutes struct {
@@ -28,7 +29,7 @@ type linksRoutes struct {
 }
 
 var ROUTES = Routes{
-	Localhost: "http://localhost:8080",
+	Localhost: "http://localhost",
 	API:       "/api",
 	Health:    "/health",
 	V1:        "/v1",
@@ -48,14 +49,17 @@ var ROUTES = Routes{
 	},
 	Docs:         "/docs",
 	DocsJsonFile: "/docs/doc.json",
+	NotFound:     "/404",
 }
 
 type ReservedRoutes struct {
-	API  string
-	Docs string
+	API      string
+	Docs     string
+	NotFound string
 }
 
 var RESERVED_ROUTES = ReservedRoutes{
-	API:  "api",
-	Docs: "docs",
+	API:      "api",
+	Docs:     "docs",
+	NotFound: "404",
 }

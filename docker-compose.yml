@@ -1,0 +1,63 @@
+services:
+  db:
+    image: postgres:13-alpine
+    environment:
+      POSTGRES_USER: ${DB_USER:-urlapp}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-DEFINE_ME_IN_ENV}
+      POSTGRES_DB: ${DB_NAME:-urlshortener}
+      LANG: en_US.UTF-8
+      LC_CTYPE: en_US.UTF-8
+      LC_COLLATE: en_US.UTF-8
+    ports:
+      - "${DB_PORT}:5434"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/conf:/etc/postgres-config
+      - /usr/share/zoneinfo:/usr/share/zoneinfo:ro
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${DB_USER}", "-d", "${DB_NAME}", "-p", "5434"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    command: 
+      - "postgres"
+      - "-c"
+      - "config_file=/etc/postgres-config/postgresql.conf"
+      - "-c"
+      - "hba_file=/etc/postgres-config/pg_hba.conf"
+    networks:
+      - app-network
+
+  app:
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    build: .
+    environment:
+      DB_HOST: db
+      DB_PORT: ${DB_PORT:-5434}
+      DB_USER: ${DB_USER:-urlapp}
+      DB_PASSWORD: ${DB_PASSWORD:-DEFINE_ME_IN_ENV}
+      DB_NAME: ${DB_NAME:-urlshortener}
+      DB_SSLMODE: disable
+      ROOT_USER_KEY: ${ROOT_USER_KEY}
+      LOG_LEVEL: error
+      PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:-example.com}
+      ENABLE_DOCS: ${ENABLE_DOCS:-true}
+      SERVER_PORT: ${SERVER_PORT:-8080}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app-network
+    ports:
+      - "${SERVER_PORT:-8080}:${SERVER_PORT:-8080}"
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
