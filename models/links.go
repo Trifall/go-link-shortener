@@ -22,7 +22,7 @@ func FindActiveLink(db *gorm.DB, shortened string) (*Link, error) {
 
 func RetrieveAllLinks(db *gorm.DB) []Link {
 	var links []Link
-	db.Find(&links)
+	db.Preload("SecretKey").Find(&links)
 	return links
 }
 
@@ -34,7 +34,7 @@ func RetrieveAllLinksByKey(db *gorm.DB, key string) ([]Link, error) {
 	}
 
 	var links []Link
-	if err := db.Where("created_by = ?", secretKey.ID).Find(&links).Error; err != nil {
+	if err := db.Preload("SecretKey").Where("created_by = ?", secretKey.ID).Find(&links).Error; err != nil {
 		return nil, errors.New("failed to retrieve links by key")
 	}
 

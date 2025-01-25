@@ -9,7 +9,6 @@ import (
 	"go-link-shortener/lib"
 	"go-link-shortener/models"
 	"go-link-shortener/utils"
-	"log"
 	"math/big"
 	"net/http"
 	"net/url"
@@ -291,28 +290,34 @@ func randomInt(min, max int) (int, error) {
 	return min + int(nBig.Int64()), nil
 }
 
-type RetrieveLinkRequest struct {
-	Shortened string `json:"shortened"`
-}
-
-type RetrieveLinkResponse struct {
-	ID            uuid.UUID  `json:"id"`
-	RedirectTo    string     `json:"redirect_to"`
-	Shortened     string     `json:"shortened"`
-	ExpiresAt     *time.Time `json:"expires_at"`
-	CreatedAt     time.Time  `json:"created_at"`
-	UpdatedAt     time.Time  `json:"updated_at"`
-	CreatedBy     uuid.UUID  `json:"created_by"`
-	Visits        int        `json:"visits"`
-	LastVisitedAt *time.Time `json:"last_visited_at"`
-	IsActive      bool       `json:"is_active"`
-}
-
 type SecretKeyResponse struct {
 	ID        uuid.UUID `json:"id"`
 	Name      string    `json:"name"`
 	CreatedAt time.Time `json:"created_at"`
 	IsActive  bool      `json:"is_active"`
+}
+
+type RetrieveLinkRequest struct {
+	Shortened string `json:"shortened"`
+}
+
+type PartialSecretKey struct {
+	Key  string `json:"key"`
+	Name string `json:"name"`
+}
+
+type RetrieveLinkResponse struct {
+	ID            uuid.UUID        `json:"id"`
+	RedirectTo    string           `json:"redirect_to"`
+	Shortened     string           `json:"shortened"`
+	ExpiresAt     *time.Time       `json:"expires_at"`
+	CreatedAt     time.Time        `json:"created_at"`
+	UpdatedAt     time.Time        `json:"updated_at"`
+	CreatedBy     uuid.UUID        `json:"created_by"`
+	SecretKey     PartialSecretKey `json:"secret_key"`
+	Visits        int              `json:"visits"`
+	LastVisitedAt *time.Time       `json:"last_visited_at"`
+	IsActive      bool             `json:"is_active"`
 }
 
 // RetrieveLinkHandler retrieves details of a shortened link.
@@ -391,6 +396,7 @@ func ToRetrieveLinkResponse(l models.Link) RetrieveLinkResponse {
 		CreatedAt:     l.CreatedAt,
 		UpdatedAt:     l.UpdatedAt,
 		CreatedBy:     l.CreatedBy,
+		SecretKey:     PartialSecretKey{Key: l.SecretKey.Key, Name: l.SecretKey.Name},
 		Visits:        l.Visits,
 		LastVisitedAt: l.LastVisitedAt,
 		IsActive:      l.IsActive,
@@ -762,7 +768,6 @@ func RetrieveAllLinksHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctxValues, _ := GetContextValues(r)
-	log.Println("Retrieve All Links Request. Requested by: '" + ctxValues.SecretKey + "'")
 
 	db := database.GetDB()
 
@@ -825,7 +830,7 @@ type RetrieveAllLinksByKeyResponse struct {
 // RetrieveAllLinksByKeyHandler retrieves all shortened links by a secret key.
 // @Summary Retrieve all shortened links by a secret key
 // @Description Retrieves all shortened links by a secret key from the database.
-// @Tags links,
+// @Tags links
 // @Accept json
 // @Produce json
 // @Security ApiKeyAuth
@@ -871,7 +876,6 @@ func RetrieveAllLinksByKeyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctxValues, _ := GetContextValues(r)
-	log.Println("Retrieve All Links By Key Request. Requested by: '" + ctxValues.SecretKey + "'")
 
 	db := database.GetDB()
 
