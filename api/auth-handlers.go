@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"go-link-shortener/auth"
+	"go-link-shortener/database"
 	"go-link-shortener/lib"
 	"go-link-shortener/models"
 	"go-link-shortener/utils"
@@ -113,7 +114,7 @@ type GenerateKeyResponse struct {
 // GenerateKeyHandler generates a new secret key.
 // @Summary Generate a new secret key
 // @Description Generates a new secret key with the specified name and admin status.
-// @Tags auth
+// @Tags auth,admin
 // @Accept json
 // @Produce json
 // @Security ApiKeyAuth
@@ -222,7 +223,7 @@ type DeleteKeyResponse struct {
 // DeleteKeyHandler deletes a secret key.
 // @Summary Delete a secret key
 // @Description Deletes a secret key by its value.
-// @Tags auth
+// @Tags auth,admin
 // @Accept json
 // @Produce json
 // @Security ApiKeyAuth
@@ -347,7 +348,7 @@ func buildUpdateRequest(req UpdateKeyRequest) auth.UpdateKeyS {
 // UpdateKeyHandler updates an existing secret key.
 // @Summary Update a secret key
 // @Description Updates an existing secret key with new values for name, admin status, or active status.
-// @Tags auth
+// @Tags auth,admin
 // @Accept json
 // @Produce json
 // @Security ApiKeyAuth
@@ -447,4 +448,100 @@ func UpdateKeyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	models.CreateLog(models.LogTypeInfo, models.LogSourceAuth, "Updated key: '"+request.Key+"'. Requested by: '"+ctxValues.SecretKey+"'", r.RemoteAddr)
+}
+
+type RetrieveAllKeysResponse struct {
+	Message string        `json:"message"`
+	Keys    []StrippedKey `json:"keys"`
+}
+
+// RetrieveAllKeysHandler retrieves all secret keys. Requires admin permissions.
+
+// @Summary Retrieve all secret keys
+// @Description Retrieves all secret keys from the database.
+// @Tags auth,admin
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Success 200 {object} RetrieveAllKeysResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 405 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /v1/keys/retrieve-all [get]
+func RetrieveAllKeysHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		config := ErrorResponseConfig{
+			Status:    http.StatusMethodNotAllowed,
+			Message:   "Method not allowed",
+			LogType:   models.LogTypeError,
+			LogSource: models.LogSourceAuth,
+			Request:   r,
+			CtxValues: nil,
+			Addendum:  "",
+		}
+		writeErrorResponse(w, config)
+		return
+	}
+
+	if CheckUnauthorized(w, r) {
+		return
+	}
+
+	ctxValues, _ := GetContextValues(r)
+	log.Println("Retrieve All Keys Request. Requested by: '" + ctxValues.SecretKey + "'")
+
+	db := database.GetDB()
+
+	if db == nil {
+		config := ErrorResponseConfig{
+			Status:    http.StatusInternalServerError,
+			Message:   "Database Error",
+			LogType:   models.LogTypeError,
+			LogSource: models.LogSourceAuth,
+			Request:   r,
+			CtxValues: &ctxValues,
+			Addendum:  "Requested by: '" + ctxValues.SecretKey + "'",
+		}
+		writeErrorResponse(w, config)
+		return
+	}
+
+	// retrieve all keys from the database
+	keys := models.RetrieveAllKeys(db)
+
+	strippedKeys := make([]StrippedKey, 0, len(keys))
+	for _, key := range keys {
+		strippedKeys = append(strippedKeys, StrippedKey{
+			Key:       key.Key,
+			Name:      key.Name,
+			CreatedAt: utils.SafeString(&key.CreatedAt),
+			UpdatedAt: utils.SafeString(&key.UpdatedAt),
+			IsActive:  key.IsActive,
+			IsAdmin:   key.IsAdmin,
+		})
+	}
+
+	response := RetrieveAllKeysResponse{
+		Message: "Keys retrieved successfully",
+		Keys:    strippedKeys,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		config := ErrorResponseConfig{
+			Status:    http.StatusInternalServerError,
+			Message:   "Server Error",
+			LogType:   models.LogTypeError,
+			LogSource: models.LogSourceAuth,
+			Request:   r,
+			CtxValues: &ctxValues,
+			Addendum:  "Requested by: '" + ctxValues.SecretKey + "'",
+		}
+		writeErrorResponse(w, config)
+		return
+	}
+
+	models.CreateLog(models.LogTypeInfo, models.LogSourceAuth,
+		"Retrieved all keys. Requested by: '"+ctxValues.SecretKey+"'", r.RemoteAddr)
 }

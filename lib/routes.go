@@ -13,19 +13,22 @@ type Routes struct {
 }
 
 type keysRoutes struct {
-	Base     string
-	Validate string
-	Generate string
-	Update   string
-	Delete   string
+	Base        string
+	RetrieveAll string
+	Validate    string
+	Generate    string
+	Update      string
+	Delete      string
 }
 
 type linksRoutes struct {
-	Base     string
-	Shorten  string
-	Retrieve string
-	Delete   string
-	Update   string
+	Base             string
+	RetrieveAll      string
+	RetrieveAllByKey string
+	Shorten          string
+	Retrieve         string
+	Delete           string
+	Update           string
 }
 
 var ROUTES = Routes{
@@ -34,18 +37,21 @@ var ROUTES = Routes{
 	Health:    "/health",
 	V1:        "/v1",
 	Keys: keysRoutes{
-		Base:     "/keys",
-		Validate: "/validate",
-		Generate: "/generate",
-		Update:   "/update",
-		Delete:   "/delete",
+		Base:        "/keys",
+		RetrieveAll: "/retrieve-all",
+		Validate:    "/validate",
+		Generate:    "/generate",
+		Update:      "/update",
+		Delete:      "/delete",
 	},
 	Links: linksRoutes{
-		Base:     "/links",
-		Shorten:  "/shorten",
-		Retrieve: "/retrieve",
-		Delete:   "/delete",
-		Update:   "/update",
+		Base:             "/links",
+		RetrieveAll:      "/retrieve-all",
+		RetrieveAllByKey: "/retrieve-all-by-key",
+		Shorten:          "/shorten",
+		Retrieve:         "/retrieve",
+		Delete:           "/delete",
+		Update:           "/update",
 	},
 	Docs:         "/docs",
 	DocsJsonFile: "/docs/doc.json",

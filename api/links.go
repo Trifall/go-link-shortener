@@ -9,6 +9,7 @@ import (
 	"go-link-shortener/lib"
 	"go-link-shortener/models"
 	"go-link-shortener/utils"
+	"log"
 	"math/big"
 	"net/http"
 	"net/url"
@@ -721,4 +722,236 @@ func UpdateLinkHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
+}
+
+type RetrieveAllLinksResponse struct {
+	Message string                 `json:"message"`
+	Links   []RetrieveLinkResponse `json:"links"`
+}
+
+// RetrieveAllLinksHandler retrieves all shortened links.
+// @Summary Retrieve all shortened links
+// @Description Retrieves all shortened links from the database.
+// @Tags links,admin
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Success 200 {object} RetrieveAllLinksResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 405 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /v1/links/retrieve-all [get]
+func RetrieveAllLinksHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		config := ErrorResponseConfig{
+			Status:    http.StatusMethodNotAllowed,
+			Message:   "Method not allowed",
+			LogType:   models.LogTypeError,
+			LogSource: models.LogSourceLinks,
+			Request:   r,
+			CtxValues: nil,
+			Addendum:  "",
+		}
+		writeErrorResponse(w, config)
+		return
+	}
+
+	if CheckUnauthorized(w, r) {
+		return
+	}
+
+	ctxValues, _ := GetContextValues(r)
+	log.Println("Retrieve All Links Request. Requested by: '" + ctxValues.SecretKey + "'")
+
+	db := database.GetDB()
+
+	if db == nil {
+		config := ErrorResponseConfig{
+			Status:    http.StatusInternalServerError,
+			Message:   "Database Error",
+			LogType:   models.LogTypeError,
+			LogSource: models.LogSourceLinks,
+			Request:   r,
+			CtxValues: &ctxValues,
+			Addendum:  "Requested by: '" + ctxValues.SecretKey + "'",
+		}
+		writeErrorResponse(w, config)
+		return
+	}
+
+	// Retrieve all links from the database
+	links := models.RetrieveAllLinks(db)
+
+	// Convert each link to RetrieveLinkResponse
+	var responseLinks []RetrieveLinkResponse
+	for _, link := range links {
+		responseLinks = append(responseLinks, ToRetrieveLinkResponse(link))
+	}
+
+	response := RetrieveAllLinksResponse{
+		Message: "Links retrieved successfully",
+		Links:   responseLinks,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		config := ErrorResponseConfig{
+			Status:    http.StatusInternalServerError,
+			Message:   "Server Error",
+			LogType:   models.LogTypeError,
+			LogSource: models.LogSourceLinks,
+			Request:   r,
+			CtxValues: &ctxValues,
+			Addendum:  "Requested by: '" + ctxValues.SecretKey + "'",
+		}
+		writeErrorResponse(w, config)
+		return
+	}
+
+	models.CreateLog(models.LogTypeInfo, models.LogSourceLinks,
+		"Retrieved all links. Requested by: '"+ctxValues.SecretKey+"'", r.RemoteAddr)
+}
+
+type RetrieveAllLinksByKeyRequest struct {
+	Key string `json:"key"`
+}
+
+type RetrieveAllLinksByKeyResponse struct {
+	Message string                 `json:"message"`
+	Links   []RetrieveLinkResponse `json:"links"`
+}
+
+// RetrieveAllLinksByKeyHandler retrieves all shortened links by a secret key.
+// @Summary Retrieve all shortened links by a secret key
+// @Description Retrieves all shortened links by a secret key from the database.
+// @Tags links,
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param request body RetrieveAllLinksByKeyRequest true "Secret key retrieval request"
+// @Success 200 {object} RetrieveAllLinksByKeyResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 405 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /v1/links/retrieve-all-by-key [post]
+func RetrieveAllLinksByKeyHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		config := ErrorResponseConfig{
+			Status:    http.StatusMethodNotAllowed,
+			Message:   "Method not allowed",
+			LogType:   models.LogTypeError,
+			LogSource: models.LogSourceLinks,
+			Request:   r,
+			CtxValues: nil,
+			Addendum:  "",
+		}
+		writeErrorResponse(w, config)
+		return
+	}
+
+	if CheckUnauthorized(w, r) {
+		return
+	}
+
+	var request RetrieveAllLinksByKeyRequest
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		config := ErrorResponseConfig{
+			Status:    http.StatusBadRequest,
+			Message:   "Invalid request body",
+			LogType:   models.LogTypeError,
+			LogSource: models.LogSourceLinks,
+			Request:   r,
+			CtxValues: nil,
+			Addendum:  "",
+		}
+		writeErrorResponse(w, config)
+		return
+	}
+
+	ctxValues, _ := GetContextValues(r)
+	log.Println("Retrieve All Links By Key Request. Requested by: '" + ctxValues.SecretKey + "'")
+
+	db := database.GetDB()
+
+	if db == nil {
+		config := ErrorResponseConfig{
+			Status:    http.StatusInternalServerError,
+			Message:   "Database Error",
+			LogType:   models.LogTypeError,
+			LogSource: models.LogSourceLinks,
+			Request:   r,
+			CtxValues: &ctxValues,
+			Addendum:  "Requested by: '" + ctxValues.SecretKey + "'",
+		}
+		writeErrorResponse(w, config)
+		return
+	}
+
+	// auth check
+	if !ctxValues.IsAdmin {
+		// verify that the secret key matches the key in the request
+		if request.Key != ctxValues.SecretKey {
+			config := ErrorResponseConfig{
+				Status:    http.StatusUnauthorized,
+				Message:   "Unauthorized to retrieve links by key",
+				LogType:   models.LogTypeWarning,
+				LogSource: models.LogSourceLinks,
+				Request:   r,
+				CtxValues: &ctxValues,
+				Addendum:  "Requested by: '" + ctxValues.SecretKey + "'",
+			}
+			writeErrorResponse(w, config)
+			return
+		}
+	}
+
+	// retrieve all links by the secret key
+	links, err := models.RetrieveAllLinksByKey(db, request.Key)
+	if err != nil {
+		config := ErrorResponseConfig{
+			Status:    http.StatusInternalServerError,
+			Message:   "Database Error",
+			LogType:   models.LogTypeError,
+			LogSource: models.LogSourceLinks,
+			Request:   r,
+			CtxValues: &ctxValues,
+			Addendum:  "Requested by: '" + ctxValues.SecretKey + "'",
+		}
+		writeErrorResponse(w, config)
+		return
+	}
+
+	// Convert to response struct
+	response := RetrieveAllLinksByKeyResponse{
+		Message: "Links retrieved successfully",
+		Links:   ToRetrieveLinkResponses(links),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		config := ErrorResponseConfig{
+			Status:    http.StatusInternalServerError,
+			Message:   "Server Error",
+			LogType:   models.LogTypeError,
+			LogSource: models.LogSourceLinks,
+			Request:   r,
+			CtxValues: &ctxValues,
+			Addendum:  "Requested by: '" + ctxValues.SecretKey + "'",
+		}
+		writeErrorResponse(w, config)
+		return
+	}
+
+	models.CreateLog(models.LogTypeInfo, models.LogSourceLinks,
+		"Retrieved all links for key: '"+request.Key+"'. Requested by: '"+ctxValues.SecretKey+"'", r.RemoteAddr)
+}
+
+func ToRetrieveLinkResponses(links []models.Link) []RetrieveLinkResponse {
+	var responseLinks []RetrieveLinkResponse
+	for _, link := range links {
+		responseLinks = append(responseLinks, ToRetrieveLinkResponse(link))
+	}
+	return responseLinks
 }

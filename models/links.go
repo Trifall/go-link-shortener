@@ -1,28 +1,11 @@
 package models
 
 import (
+	"errors"
 	"time"
 
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
-
-// Create a new link
-func CreateLink(db *gorm.DB, redirectTo string, shortened string, expiresAt *time.Time, createdBy uuid.UUID) (*Link, error) {
-	link := &Link{
-		RedirectTo: redirectTo,
-		Shortened:  shortened,
-		ExpiresAt:  expiresAt,
-		CreatedBy:  createdBy,
-	}
-
-	result := db.Create(link)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-
-	return link, nil
-}
 
 // Find an active link by shortened URL
 func FindActiveLink(db *gorm.DB, shortened string) (*Link, error) {
@@ -35,4 +18,25 @@ func FindActiveLink(db *gorm.DB, shortened string) (*Link, error) {
 	}
 
 	return &link, nil
+}
+
+func RetrieveAllLinks(db *gorm.DB) []Link {
+	var links []Link
+	db.Find(&links)
+	return links
+}
+
+func RetrieveAllLinksByKey(db *gorm.DB, key string) ([]Link, error) {
+	// retrieve the UUID associated with the key
+	var secretKey SecretKey
+	if err := db.Where("key = ?", key).First(&secretKey).Error; err != nil {
+		return nil, errors.New("key not found")
+	}
+
+	var links []Link
+	if err := db.Where("created_by = ?", secretKey.ID).Find(&links).Error; err != nil {
+		return nil, errors.New("failed to retrieve links by key")
+	}
+
+	return links, nil
 }

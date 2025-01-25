@@ -101,3 +101,9 @@ func SearchKeyByKey(db *gorm.DB, key string) *SecretKey {
 
 	return &secretKey
 }
+
+func RetrieveAllKeys(db *gorm.DB) []SecretKey {
+	var secretKeys []SecretKey
+	db.Find(&secretKeys)
+	return secretKeys
+}

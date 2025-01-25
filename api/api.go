@@ -52,8 +52,18 @@ func V1Router() chi.Router {
 		r.Route(lib.ROUTES.Links.Base, func(r chi.Router) {
 			r.Post(lib.ROUTES.Links.Shorten, ShortenHandler)
 			r.Post(lib.ROUTES.Links.Retrieve, RetrieveLinkHandler)
+			// validates self link
 			r.Post(lib.ROUTES.Links.Delete, DeleteLinkHandler)
+			// validates self link
 			r.Post(lib.ROUTES.Links.Update, UpdateLinkHandler)
+			// validates self link
+			r.Post(lib.ROUTES.Links.RetrieveAllByKey, RetrieveAllLinksByKeyHandler)
+
+			r.Group(func(r chi.Router) {
+				// Use AdminOnlyMiddleware for admin only routes
+				r.Use(AdminOnlyMiddleware)
+				r.Get(lib.ROUTES.Links.RetrieveAll, RetrieveAllLinksHandler)
+			})
 		})
 
 		// !Admin Routes Below!
@@ -62,6 +72,7 @@ func V1Router() chi.Router {
 			r.Use(AdminOnlyMiddleware)
 			r.Route(lib.ROUTES.Keys.Base, func(r chi.Router) {
 				r.Post(lib.ROUTES.Keys.Validate, ValidateKeyHandler)
+				r.Get(lib.ROUTES.Keys.RetrieveAll, RetrieveAllKeysHandler)
 				r.Post(lib.ROUTES.Keys.Generate, GenerateKeyHandler)
 				r.Post(lib.ROUTES.Keys.Update, UpdateKeyHandler)
 				r.Post(lib.ROUTES.Keys.Delete, DeleteKeyHandler)
