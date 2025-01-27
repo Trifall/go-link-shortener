@@ -103,7 +103,7 @@ docker-run: ## Run the application using Docker Compose
 
 docker-rebuild-app: ## Rebuild the application inside the Docker container
 	@printf "$(BLUE)Rebuilding application inside Docker container...$(NC)\n"
-	@docker-compose build app && docker-compose restart app
+	@docker-compose build --no-cache app && docker-compose restart app
 	@printf "$(GREEN)Application rebuilt successfully!$(NC)\n"
 
 docker-rebuild-db: ## Rebuild the database inside the Docker container
