@@ -66,12 +66,12 @@ func V1Router() chi.Router {
 			})
 		})
 
-		// !Admin Routes Below!
-		r.Group(func(r chi.Router) {
-			// Use AdminOnlyMiddleware for admin only routes
-			r.Use(AdminOnlyMiddleware)
-			r.Route(lib.ROUTES.Keys.Base, func(r chi.Router) {
-				r.Post(lib.ROUTES.Keys.Validate, ValidateKeyHandler)
+		r.Route(lib.ROUTES.Keys.Base, func(r chi.Router) {
+			r.Post(lib.ROUTES.Keys.Validate, ValidateKeyHandler)
+
+			r.Group(func(r chi.Router) {
+				r.Use(AdminOnlyMiddleware)
+				// !Admin Routes Below!
 				r.Get(lib.ROUTES.Keys.RetrieveAll, RetrieveAllKeysHandler)
 				r.Post(lib.ROUTES.Keys.Generate, GenerateKeyHandler)
 				r.Post(lib.ROUTES.Keys.Update, UpdateKeyHandler)
