@@ -20,7 +20,7 @@ func CreateSecretKey(db *gorm.DB, name string, isAdmin bool) *SecretKey {
 		if _, err := rand.Read(prefix); err != nil {
 			return nil // Return nil if there's an error
 		}
-		randomPrefix := base64.URLEncoding.EncodeToString(prefix)
+		randomPrefix := base64.RawURLEncoding.EncodeToString(prefix)
 		name = "User " + randomPrefix
 	}
 
@@ -29,7 +29,7 @@ func CreateSecretKey(db *gorm.DB, name string, isAdmin bool) *SecretKey {
 	if _, err := rand.Read(keyBytes); err != nil {
 		return nil
 	}
-	key = base64.URLEncoding.EncodeToString(keyBytes)
+	key = base64.RawURLEncoding.EncodeToString(keyBytes)
 
 	secretKey := &SecretKey{
 		Key:       key,
