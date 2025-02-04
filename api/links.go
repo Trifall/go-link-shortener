@@ -701,7 +701,19 @@ func UpdateLinkHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if request.ExpiresAt != nil {
-		link.ExpiresAt = request.ExpiresAt
+		// define the earliest possible timestamp
+		earliest, err := time.Parse(time.RFC3339, "1970-01-01T00:00:00.000Z")
+		if err != nil {
+			// if parsing fails, fall back to using the provided value.
+			link.ExpiresAt = request.ExpiresAt
+		} else {
+			// if the provided expires_at equals the earliest possible timestamp, unset it.
+			if request.ExpiresAt.Equal(earliest) {
+				link.ExpiresAt = nil
+			} else {
+				link.ExpiresAt = request.ExpiresAt
+			}
+		}
 	}
 
 	if request.IsActive != nil {
