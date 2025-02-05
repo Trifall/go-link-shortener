@@ -407,7 +407,7 @@ func ToRetrieveLinkResponse(l models.Link) RetrieveLinkResponse {
 func RetrieveLink(db *gorm.DB, shortened string) (*models.Link, error) {
 	var link models.Link
 	// preload the SecretKey relationship
-	result := db.Preload("SecretKey").Where("shortened = ?", shortened).First(&link)
+	result := db.Preload("SecretKey").Where("shortened = ?", shortened, true).First(&link)
 
 	if result.Error != nil {
 		return nil, result.Error
@@ -418,7 +418,7 @@ func RetrieveLink(db *gorm.DB, shortened string) (*models.Link, error) {
 
 func RetrieveRedirectURL(db *gorm.DB, shortened string) (*models.Link, error) {
 	var link models.Link
-	result := db.Where("shortened = ?", shortened).First(&link)
+	result := db.Where("shortened = ? AND is_active = ?", shortened, true).First(&link)
 
 	if result.Error != nil {
 		return nil, result.Error
