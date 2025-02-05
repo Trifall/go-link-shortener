@@ -93,22 +93,22 @@ setup: swagger ## Setup the project
 
 docker-build: ## Build the Docker image
 	@printf "$(BLUE)Building Docker image...$(NC)\n"
-	@docker-compose build
+	@docker compose build
 	@printf "$(GREEN)Docker image built successfully!$(NC)\n"
 
 docker-run: ## Run the application using Docker Compose
 	@printf "$(BLUE)Starting Docker containers in interactive mode...$(NC)\n"
-	@docker-compose up
+	@docker compose up
 	@printf "$(GREEN)Docker containers started!$(NC)\n"
 
 docker-rebuild-app: ## Rebuild the application inside the Docker container
 	@printf "$(BLUE)Rebuilding application inside Docker container...$(NC)\n"
-	@docker-compose build --no-cache app && docker-compose restart app
+	@docker compose build --no-cache app && docker compose restart app
 	@printf "$(GREEN)Application rebuilt successfully!$(NC)\n"
 
 docker-rebuild-db: ## Rebuild the database inside the Docker container
 	@printf "$(BLUE)Rebuilding database inside Docker container...$(NC)\n"
-	@docker-compose build db && docker-compose restart db
+	@docker compose build db && docker compose restart db
 	@printf "$(GREEN)Database rebuilt successfully!$(NC)\n"
 
 docker-rebuild-all: docker-rebuild-app docker-rebuild-db ## Rebuild the application and database inside the Docker container
@@ -120,13 +120,13 @@ docker-rebuild-all: docker-rebuild-app docker-rebuild-db ## Rebuild the applicat
 
 docker-stop: ## Stop the Docker containers
 	@printf "$(BLUE)Stopping Docker containers...$(NC)\n"
-	@docker-compose stop
+	@docker compose stop
 	@printf "$(GREEN)Docker containers stopped!$(NC)\n"
 	@printf "$(GREEN)Use 'make docker-start' to start the containers.$(NC)\n"
 
 docker-start: ## Start the Docker containers
 	@printf "$(BLUE)Starting Docker containers in detached mode...$(NC)\n"
-	@docker-compose up -d
+	@docker compose up -d
 	@printf "$(GREEN)Docker containers started!$(NC)\n"
 	@printf "$(GREEN)Use 'make docker-stop' to stop the containers.$(NC)\n"
 	@printf "$(GREEN)=================================================$(NC)\n"
@@ -138,7 +138,7 @@ docker-start: ## Start the Docker containers
 
 docker-restart: ## Restart the Docker containers
 	@printf "$(BLUE)Restarting Docker containers...$(NC)\n"
-	@docker-compose restart
+	@docker compose restart
 	@printf "$(GREEN)Docker containers restarted!$(NC)\n"
 
 help: ## Display available commands
