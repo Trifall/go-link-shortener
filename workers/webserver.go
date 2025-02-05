@@ -41,7 +41,7 @@ func InitializeWebserver(env *utils.Env) error {
 		log.Println("⏳ Setting up swagger API docs...")
 
 		r.Get(lib.ROUTES.Docs+"/*", httpSwagger.Handler(
-			httpSwagger.URL(lib.ROUTES.Localhost+":"+env.SERVER_PORT+lib.ROUTES.DocsJsonFile),
+			httpSwagger.URL(lib.ROUTES.DocsJsonFile),
 			httpSwagger.AfterScript(craftPostScript()),
 			httpSwagger.UIConfig(map[string]string{
 				"deepLinking":     "true",
