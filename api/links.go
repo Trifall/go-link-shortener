@@ -29,7 +29,7 @@ type ShortenRequest struct {
 }
 
 type ShortenResponse struct {
-	ShortenedURL string `json:"shortened_url"`
+	ShortenedURL string `json:"shortened"`
 }
 
 // ShortenHandler shortens a URL.
@@ -407,7 +407,7 @@ func ToRetrieveLinkResponse(l models.Link) RetrieveLinkResponse {
 func RetrieveLink(db *gorm.DB, shortened string) (*models.Link, error) {
 	var link models.Link
 	// preload the SecretKey relationship
-	result := db.Preload("SecretKey").Where("shortened = ?", shortened, true).First(&link)
+	result := db.Preload("SecretKey").Where("shortened = ?", shortened).First(&link)
 
 	if result.Error != nil {
 		return nil, result.Error
