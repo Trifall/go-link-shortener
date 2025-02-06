@@ -25,38 +25,45 @@ NC=\033[0m # No Color
 
 all: clean deps build test ## Build the application and run tests
 
+# LOCAL-RUN SWAGGER
 swagger: 
 	@go install github.com/swaggo/swag/cmd/swag@latest
 	@printf "$(BLUE)Constructing swagger docs...$(NC)\n"
 	@swag init -q
 	@printf "$(GREEN)Swagger docs constructed successfully!$(NC)\n"
 
+# LOCAL-RUN BUILD
 build: swagger ## Build the application
 	@printf "$(BLUE)Building application...$(NC)\n"
 	@LOCAL_BUILD=true go build ${LDFLAGS} -o ${GOBIN}/${BINARY_NAME} .
 	@printf "$(GREEN)Build complete! Binary location: ${GOBIN}/${BINARY_NAME}$(NC)\n"
 
+# LOCAL-RUN CLEAN
 clean: ## Clean build files
 	@printf "$(BLUE)Cleaning build cache...$(NC)\n"
 	@go clean
 	@rm -rf ${GOBIN}
 	@printf "$(GREEN)Cleaned build files and cache$(NC)\n"
 
+# LOCAL-RUN RUN
 run: build ## Build and run the application
 	@printf "$(BLUE)Starting server...$(NC)\n"
 	@LOCAL_BUILD=true ${GOBIN}/${BINARY_NAME}
 
+# LOCAL-RUN SETUP
 deps: ## Download and verify dependencies
 	@printf "$(BLUE)Downloading dependencies...$(NC)\n"
 	@go mod download
 	@go mod verify
 	@printf "$(GREEN)Dependencies ready$(NC)\n"
 
+# LOCAL-RUN TEST
 test: swagger ## Run tests
 	@printf "$(BLUE)Running tests...$(NC)\n"
 	@ENVIRONMENT=test go test -v ./...
 	@printf "$(GREEN)Tests complete$(NC)\n"
 
+# LOCAL-RUN COVERAGE
 coverage: swagger ## Run tests with coverage
 	@printf "$(BLUE)Running tests with coverage...$(NC)\n"
 	@mkdir -p coverage
@@ -64,11 +71,13 @@ coverage: swagger ## Run tests with coverage
 	@go tool cover -html=coverage/coverage.out -o coverage/coverage.html
 	@printf "$(GREEN)Coverage analysis complete. See coverage/coverage.html for detailed report$(NC)\n"
 
+# LOCAL-RUN VET
 vet: ## Run go vet
 	@printf "$(BLUE)Running go vet...$(NC)\n"
 	@go vet ./...
 	@printf "$(GREEN)Vet check complete$(NC)\n"
 
+# LOCAL-RUN LINT
 lint: swagger ## Run linter
 	@printf "$(BLUE)Running linter...$(NC)\n"
 	@if command -v golangci-lint >/dev/null; then \
@@ -79,6 +88,7 @@ lint: swagger ## Run linter
 		exit 1; \
 	fi
 
+# LOCAL-RUN SETUP
 setup: swagger ## Setup the project
 	@make deps
 	@printf "$(BLUE)Setting up project...$(NC)\n"
