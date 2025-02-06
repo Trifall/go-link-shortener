@@ -40,6 +40,19 @@ func InitializeWebserver(env *utils.Env) error {
 
 		log.Println("⏳ Setting up swagger API docs...")
 
+		// This will handle "/docs" exactly.
+		r.Get(lib.ROUTES.Docs, httpSwagger.Handler(
+			httpSwagger.URL(lib.ROUTES.DocsJsonFile),
+			httpSwagger.AfterScript(craftPostScript()),
+			httpSwagger.UIConfig(map[string]string{
+				"deepLinking":     "true",
+				"filter":          "false",
+				"showExtensions":  "true",
+				"syntaxHighlight": `{"active":"true"}`,
+			}),
+		))
+
+		// This will handle any route starting with "/docs/"
 		r.Get(lib.ROUTES.Docs+"/*", httpSwagger.Handler(
 			httpSwagger.URL(lib.ROUTES.DocsJsonFile),
 			httpSwagger.AfterScript(craftPostScript()),
