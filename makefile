@@ -97,6 +97,11 @@ docker-build: ## Build the Docker image
 	@printf "$(GREEN)Docker image built successfully!$(NC)\n"
 
 docker-run: ## Run the application using Docker Compose
+	@printf "$(BLUE)Starting Docker containers in detached mode...$(NC)\n"
+	@docker compose up -d
+	@printf "$(GREEN)Docker containers started!$(NC)\n"
+
+docker-run-interactive: ## Run the application using Docker Compose Interactively
 	@printf "$(BLUE)Starting Docker containers in interactive mode...$(NC)\n"
 	@docker compose up
 	@printf "$(GREEN)Docker containers started!$(NC)\n"
