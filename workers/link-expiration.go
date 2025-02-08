@@ -11,11 +11,14 @@ import (
 	"gorm.io/gorm"
 )
 
+// LinkExpirationWorker handles the scheduled expiration of links in the system
 type LinkExpirationWorker struct {
 	db       *gorm.DB
 	interval time.Duration
 }
 
+// NewLinkExpirationWorker creates a new worker instance with the provided database connection
+// The worker runs every 30 seconds by default
 func NewLinkExpirationWorker(db *gorm.DB) *LinkExpirationWorker {
 	return &LinkExpirationWorker{
 		db:       db,
@@ -23,6 +26,9 @@ func NewLinkExpirationWorker(db *gorm.DB) *LinkExpirationWorker {
 	}
 }
 
+// Start begins the worker process to handle link expirations
+// It runs continuously until the provided context is cancelled
+// Returns an error if the context is cancelled or if processing fails
 func (w *LinkExpirationWorker) Start(ctx context.Context) error {
 	ticker := time.NewTicker(w.interval)
 	defer ticker.Stop()
@@ -39,6 +45,11 @@ func (w *LinkExpirationWorker) Start(ctx context.Context) error {
 	}
 }
 
+// processExpiredLinks handles the deactivation of expired links
+// Links are considered expired if:
+// - Their expiration date has passed
+// - They haven't been visited in 90 days
+// Returns an error if database operations fail
 func (w *LinkExpirationWorker) processExpiredLinks() error {
 	prefix := make([]byte, 12)
 	if _, err := rand.Read(prefix); err != nil {
@@ -52,7 +63,6 @@ func (w *LinkExpirationWorker) processExpiredLinks() error {
 	}
 
 	err := w.db.Transaction(func(tx *gorm.DB) error {
-		// First get the count of records to be updated
 		if err := tx.Model(&models.Link{}).
 			Where("is_active = ? AND ("+
 				"(expires_at IS NOT NULL AND expires_at < ?) OR "+
@@ -66,7 +76,6 @@ func (w *LinkExpirationWorker) processExpiredLinks() error {
 			return nil
 		}
 
-		// Perform the update and return affected IDs
 		return tx.Model(&models.Link{}).
 			Where("is_active = ? AND ("+
 				"(expires_at IS NOT NULL AND expires_at < ?) OR "+
