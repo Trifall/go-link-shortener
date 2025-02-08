@@ -11,7 +11,9 @@ import (
 	All functions in this file require admin permissions
 */
 
-// pass in the creators secret key and the new key name (for the new key)
+// GenerateSecretKey generates a new secret key with the given name and admin status.
+// It returns the generated secret key or an error if the key creation fails.
+// The new key name must be unique and not exceed 100 characters.
 func GenerateSecretKey(newKeyName string, isAdmin bool) (*models.SecretKey, error) {
 	db := database.GetDB()
 	if db == nil {
@@ -38,6 +40,7 @@ func GenerateSecretKey(newKeyName string, isAdmin bool) (*models.SecretKey, erro
 	return key, nil
 }
 
+// UpdateKeyS is a struct used to pass update parameters for a secret key.
 type UpdateKeyS struct {
 	Name     *string
 	Key      *string
@@ -45,6 +48,9 @@ type UpdateKeyS struct {
 	IsAdmin  *bool
 }
 
+// UpdateKey updates the properties of an existing secret key.
+// It returns a success message, the updated key, or an error if the update fails.
+// The key to be updated must exist and cannot be the root user key.
 func UpdateKey(request UpdateKeyS) (string, *models.SecretKey, error) {
 	db := database.GetDB()
 	if db == nil {
@@ -91,6 +97,9 @@ func UpdateKey(request UpdateKeyS) (string, *models.SecretKey, error) {
 	return "Key updated successfully", updateKeyObj, nil
 }
 
+// DeleteKeyByKey deletes a secret key by its key value.
+// It returns a success message or an error if the deletion fails.
+// The key to be deleted must exist and cannot be the root user key.
 func DeleteKeyByKey(keyToDelete string) (string, error) {
 	db := database.GetDB()
 	if db == nil {
@@ -116,6 +125,9 @@ func DeleteKeyByKey(keyToDelete string) (string, error) {
 	return "Key deleted successfully", nil
 }
 
+// DeleteKeyByName deletes a secret key by its name.
+// It returns a success message or an error if the deletion fails.
+// The key to be deleted must exist and cannot be the root user key.
 func DeleteKeyByName(keyName string) (string, error) {
 	db := database.GetDB()
 	if db == nil {
@@ -141,6 +153,8 @@ func DeleteKeyByName(keyName string) (string, error) {
 	return "Key deleted successfully", nil
 }
 
+// GetKeys retrieves all secret keys from the database.
+// It returns a list of secret keys or an error if the retrieval fails.
 func GetKeys(secretKey string) ([]models.SecretKey, error) {
 	db := database.GetDB()
 	if db == nil {
@@ -153,6 +167,8 @@ func GetKeys(secretKey string) ([]models.SecretKey, error) {
 	return keys, nil
 }
 
+// ValidateKey checks if a secret key is valid and returns the corresponding key object.
+// It returns the key object or an error if the key is invalid or not found.
 func ValidateKey(secretKey string) (*models.SecretKey, error) {
 	db := database.GetDB()
 	if db == nil {
