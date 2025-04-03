@@ -39,7 +39,7 @@ services:
     container_name: go-link-shortener-db # name whatever you want
     environment:
       POSTGRES_USER: ${DB_USER:-urlapp} # define here or env. Default is urlapp
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-DEFINE_ME_IN_ENV} # define here or env. No default, you must set this.
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DEFINE_ME_IN_ENV} # define here or env. No default, you must set this.
       POSTGRES_DB: ${DB_NAME:-urlshortener} # define here or env. Default is urlshortener
       LANG: en_US.UTF-8
       LC_CTYPE: en_US.UTF-8
