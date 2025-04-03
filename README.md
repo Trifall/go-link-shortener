@@ -1,6 +1,6 @@
 # go-link-shortener
 
-A URL shortener written in Go using PostgreSQL. Their is a sibling project at [Link Shortener UI](https://github.com/Trifall/link-shortener-ui).
+A URL shortener written in Go using PostgreSQL. There is a sibling project at [Link Shortener UI](https://github.com/Trifall/link-shortener-ui).
 
 ## Getting Started
 
