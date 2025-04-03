@@ -9,6 +9,7 @@ RUN apk add --no-cache git make && \
 
 # Copy dependency files first to leverage layer caching
 COPY go.mod go.sum ./
+
 RUN go mod download
 
 # Copy remaining source files
@@ -18,7 +19,7 @@ COPY . .
 RUN make build
 
 # Runtime stage
-FROM alpine:latest
+FROM alpine:3.21.3
 
 WORKDIR /app
 
@@ -26,14 +27,8 @@ WORKDIR /app
 RUN apk add --no-cache postgresql-client ca-certificates
 
 COPY --from=builder /app/bin/go-link-shortener .
-COPY entrypoint.sh .env ./
+COPY entrypoint.sh ./
 
-# Set permissions and process .env in a single layer
-RUN chmod +x entrypoint.sh && \
-  SERVER_PORT=$(grep SERVER_PORT .env | cut -d '=' -f2) && \
-  echo "Exposing port $SERVER_PORT" && \
-  echo "EXPOSE $SERVER_PORT" >> /app/Dockerfile.tmp
-
-EXPOSE $SERVER_PORT
+EXPOSE 8080
 
 ENTRYPOINT ["./entrypoint.sh"]

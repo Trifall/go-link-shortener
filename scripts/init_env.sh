@@ -36,7 +36,7 @@ echo -e "${BLUE}[SETUP_ENV] Creating/updating environment files...${NC}"
 {
   echo "#postgres info"
   echo "DB_HOST=${DB_HOST:-localhost}"
-  echo "DB_PORT=${DB_PORT:-5434}"
+  echo "DB_PORT=${DB_PORT:-5432}"
   echo "DB_USER=${DB_USER:-urlapp}"
   echo "DB_PASSWORD=${DB_PASSWORD:-your_db_password}"
   echo "DB_NAME=${DB_NAME:-urlshortener}"

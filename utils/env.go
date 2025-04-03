@@ -50,9 +50,9 @@ func LoadEnv() *Env {
 
 	dbPort := os.Getenv("DB_PORT")
 
-	// if not in local or test mode, set the the port to 5434
+	// if not in local or test mode, set the the port to 5432
 	if !isLocalMode && !isTestMode {
-		dbPort = "5434"
+		dbPort = "5432"
 	}
 
 	serverPort := os.Getenv("SERVER_PORT")
