@@ -49,7 +49,7 @@ echo -e "${BLUE}[SETUP_ENV] Creating/updating environment files...${NC}"
   echo "# can be error, warning, info"
   echo "LOG_LEVEL=${LOG_LEVEL:-error}"
   echo "# depends on where you are hosting it, used to filter out for loops"
-  echo "PUBLIC_SITE_URL=${PUBLIC_SITE_URL:-example.com}"
+  echo "PUBLIC_SITE_URL=${PUBLIC_SITE_URL:-http://localhost:8080}"
   echo "# enable API documentation at the /docs/ endpoint"
   echo "ENABLE_DOCS=${ENABLE_DOCS:-true}"
 } >.env.tmp
