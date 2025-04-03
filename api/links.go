@@ -224,7 +224,11 @@ func isAlphanumeric(s string) bool {
 // isShortenedURLTaken checks if the given shortened URL already exists in the database or if it matches any reserved routes.
 func isShortenedURLTaken(db *gorm.DB, url string) (bool, error) {
 	// Check if the URL matches any reserved routes
-	if url == lib.RESERVED_ROUTES.API || url == lib.RESERVED_ROUTES.Docs || url == lib.RESERVED_ROUTES.NotFound {
+	if url == lib.RESERVED_ROUTES.API || url == lib.RESERVED_ROUTES.NotFound {
+		return true, nil // URL is a reserved route, so it's "taken"
+	}
+
+	if url == lib.RESERVED_ROUTES.Docs && utils.ENV.ENABLE_DOCS == "true" {
 		return true, nil // URL is a reserved route, so it's "taken"
 	}
 

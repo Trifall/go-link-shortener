@@ -31,6 +31,9 @@ func CheckLocalEnvironment() bool {
 	return ok
 }
 
+// Make Global ENV available
+var ENV *Env
+
 func LoadEnv() *Env {
 	isTestMode := CheckTestEnvironment()
 	isLocalMode := CheckLocalEnvironment()
@@ -84,5 +87,6 @@ func LoadEnv() *Env {
 		}
 	}
 
+	ENV = &env
 	return &env
 }
