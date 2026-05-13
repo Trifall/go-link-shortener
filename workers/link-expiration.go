@@ -47,8 +47,7 @@ func (w *LinkExpirationWorker) Start(ctx context.Context) error {
 
 // processExpiredLinks handles the deactivation of expired links
 // Links are considered expired if:
-// - Their expiration date has passed
-// - They haven't been visited in 90 days
+// - Their explicit expiration date has passed
 // Returns an error if database operations fail
 func (w *LinkExpirationWorker) processExpiredLinks() error {
 	prefix := make([]byte, 12)
@@ -64,10 +63,7 @@ func (w *LinkExpirationWorker) processExpiredLinks() error {
 
 	err := w.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Model(&models.Link{}).
-			Where("is_active = ? AND ("+
-				"(expires_at IS NOT NULL AND expires_at < ?) OR "+
-				"(last_visited_at IS NOT NULL AND last_visited_at + INTERVAL '90 days' < ?)"+
-				")", true, time.Now(), time.Now()).
+			Where("is_active = ? AND expires_at IS NOT NULL AND expires_at < ?", true, time.Now()).
 			Count(&affectedRows).Error; err != nil {
 			return err
 		}
@@ -77,10 +73,7 @@ func (w *LinkExpirationWorker) processExpiredLinks() error {
 		}
 
 		return tx.Model(&models.Link{}).
-			Where("is_active = ? AND ("+
-				"(expires_at IS NOT NULL AND expires_at < ?) OR "+
-				"(last_visited_at IS NOT NULL AND last_visited_at + INTERVAL '90 days' < ?)"+
-				")", true, time.Now(), time.Now()).
+			Where("is_active = ? AND expires_at IS NOT NULL AND expires_at < ?", true, time.Now()).
 			Updates(map[string]interface{}{
 				"is_active":  false,
 				"shortened":  gorm.Expr("? || id::text", randomPrefix),
